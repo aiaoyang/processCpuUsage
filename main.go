@@ -23,14 +23,12 @@ func init() {
 func main() {
 	log.SetFlags(log.Llongfile | log.Ltime)
 	todo := context.TODO()
-	// ch := make(chan int, 0)
 	go conf.watchConfigChange(todo)
 	// go http.ListenAndServe("0.0.0.0:10088", nil)
 	genericTODO(nil)
 }
 
 func genericTODO(alarm func(msg interface{})) {
-	// isAlarm := false
 	ctx := context.TODO()
 	c := influxc.NewClient("http://"+CLocal.InfluxDBConfig.Host+":"+CLocal.InfluxDBConfig.Port, "")
 	ok, err := c.Health(ctx)
@@ -44,7 +42,7 @@ func genericTODO(alarm func(msg interface{})) {
 	defer c.Close()
 	defer writeAPI.Close()
 
-	alarming := false
+	isAlarm := false
 	alarmOnce := sync.Once{}
 	cancelAlarmOnce := sync.Once{}
 	for {
@@ -56,9 +54,9 @@ func genericTODO(alarm func(msg interface{})) {
 				pushToInfluxDB(writeAPI, pids...)
 
 				// 如果之前发生告警则触发告警恢复
-				if alarming {
+				if isAlarm {
 					cancelAlarmOnce.Do(func() {
-						alarming = false
+						isAlarm = false
 						/*
 							告警恢复逻辑写在此处
 						*/
@@ -71,7 +69,7 @@ func genericTODO(alarm func(msg interface{})) {
 				GConfig.PIDS = getProcessPID(GConfig.Name)
 				// TODO: 应该触发一次告警,然后尝试重新获取pid
 				alarmOnce.Do(func() {
-					alarming = true
+					isAlarm = true
 					/*
 						告警触发逻辑写在此处
 					*/
