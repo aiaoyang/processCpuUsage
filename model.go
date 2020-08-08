@@ -25,6 +25,7 @@ type ProcessInfo struct {
 type LocalConfig struct {
 	AliYunConfig   `yaml:"aliyunConfig"`
 	InfluxDBConfig `yaml:"influxDBConfig"`
+	Env            string `yaml:"env"`
 }
 
 // AliYunConfig 本地配置中阿里云相关访问权限字段设置

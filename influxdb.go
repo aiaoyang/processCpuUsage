@@ -29,6 +29,7 @@ func pushToInfluxDB(writeAPI api.WriteAPI, pids ...string) {
 			map[string]string{
 				"hostname": hostName,
 				"pid":      pid,
+				"env":      CLocal.Env,
 				"process":  processName(pid),
 			},
 			map[string]interface{}{
