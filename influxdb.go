@@ -39,13 +39,13 @@ func pushToInfluxDB(writeAPI api.WriteAPI, pids ...string) {
 			time.Now())
 		// write asynchronously
 		writeAPI.WritePoint(p)
-		writeAPI.Flush()
 		wg.Done()
 	}
 
 	for _, pid := range pids {
 		go pushInflux(wg, hostName, pid)
 	}
+	writeAPI.Flush()
 	wg.Wait()
 }
 
