@@ -8,4 +8,5 @@ aliyunConfig:
 influxDBConfig:
   host: ""
   port: ""
+env: ""
 # metricDuration: 1
