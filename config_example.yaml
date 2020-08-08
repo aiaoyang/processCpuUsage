@@ -1,0 +1,11 @@
+aliyunConfig:
+  endpoint: ""
+  namespaceID: ""
+  accessKey: ""
+  secretKey: ""
+  dataID: ""
+  group: ""
+influxDBConfig:
+  host: ""
+  port: ""
+# metricDuration: 1
