@@ -1,0 +1,174 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
+)
+
+// ALiConfigClientConfig 阿里云 configClient需要的参数信息
+type ALiConfigClientConfig struct {
+	endpoint    string
+	namespaceID string
+	accessKey   string
+	secretKey   string
+
+	dataID string
+	group  string
+}
+
+func (c *ALiConfigClientConfig) new() {
+
+	endpoint := VLocal.GetString("aliyunConfig.endpoint")
+	namespaceID := VLocal.GetString("aliyunConfig.namespaceid")
+	accessKey := VLocal.GetString("aliyunConfig.accessKey")
+	secretKey := VLocal.GetString("aliyunConfig.secretKey")
+
+	dataID := VLocal.GetString("aliyunConfig.dataID")
+	group := VLocal.GetString("aliyunConfig.group")
+
+	fmt.Printf("endpoint: %s\nnamespaceID: %s\naccessKey: %s\nsecretKey: %s\ndataID: %s\ngroup: %s\n",
+		endpoint,
+		namespaceID,
+		accessKey,
+		secretKey,
+		dataID,
+		group,
+	)
+
+	c.endpoint = endpoint
+	c.namespaceID = namespaceID
+	c.accessKey = accessKey
+	c.secretKey = secretKey
+	c.dataID = dataID
+	c.group = group
+}
+
+// 生成阿里云 configClient
+func newConfigClient(c ALiConfigClientConfig) (config_client.IConfigClient, error) {
+	clientConfig := constant.ClientConfig{
+		Endpoint:       c.endpoint + ":8080",
+		NamespaceId:    c.namespaceID,
+		AccessKey:      c.accessKey,
+		SecretKey:      c.secretKey,
+		TimeoutMs:      3 * 1000,
+		ListenInterval: 30 * 1000,
+	}
+
+	configClient, err := clients.CreateConfigClient(map[string]interface{}{
+		"clientConfig": clientConfig,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return configClient, nil
+}
+
+// func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context, ch chan int) error {
+func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context) error {
+	aliConfigClient, err := newConfigClient(*c)
+	if err != nil {
+		return err
+	}
+
+	f := func(namespace, group, dataID, data string) {
+		if netWorkDown() {
+			cacheFile, err := getCacheConfigFile()
+			if err != nil {
+				panic(err)
+			}
+			VCloud.ReadConfig(bytes.NewBuffer(cacheFile))
+		} else {
+			stringToViperConfig(VCloud, data)
+		}
+	}
+
+	return aliConfigClient.ListenConfig(vo.ConfigParam{
+		DataId:   c.dataID,
+		Group:    c.group,
+		OnChange: f,
+	})
+}
+
+// 检查阿里云首页网络是否联通
+func netWorkDown() bool {
+	client := http.Client{}
+	req, err := http.NewRequest("GET", "https://www.aliyun.com", nil)
+	client.Timeout = time.Second * 3
+	req.Header.Set("Content-Type", "text/html")
+	if err != nil {
+		log.Println(err)
+		return true
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return true
+	}
+	if resp.StatusCode == 200 {
+		log.Printf("net work is up \n")
+		return false
+	}
+	ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	return true
+}
+
+func getCacheConfigFile() ([]byte, error) {
+	dir := "./cache/config/"
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(files) == 1 {
+		content, err := ioutil.ReadFile(dir + files[0].Name())
+		if err != nil {
+			log.Fatal(err)
+		}
+		return content, nil
+	}
+	return nil, fmt.Errorf("config file not found")
+}
+
+// func (c *ALiConfigClientConfig) updateConfig() error {
+// 	log.Println("update config to alicloud")
+// 	aliConfigClient, err := newConfigClient(*c)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	log.Printf("updateConfig: get viper pid: %s\n", VCloud.GetString("processinfo.name"))
+// 	processName := VCloud.GetString("processinfo.name")
+
+// 	pids := getProcessPID(processName)
+// 	GConfig.PID = pids
+// 	GConfig.Name = processName
+// 	GConfig.HostName, _ = os.Hostname()
+
+// 	content, err := yaml.Marshal(GConfig)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	isOk, err := aliConfigClient.PublishConfig(
+// 		vo.ConfigParam{
+// 			DataId:  c.dataID,
+// 			Group:   c.group,
+// 			Content: fmt.Sprintf("%s", content),
+// 		},
+// 	)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if !isOk {
+// 		return fmt.Errorf("update config failed")
+// 	}
+// 	return nil
+// }
