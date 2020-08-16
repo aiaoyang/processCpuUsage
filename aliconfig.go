@@ -54,12 +54,12 @@ func (c *ALiConfigClientConfig) new() {
 }
 
 // 生成阿里云 configClient
-func newConfigClient(c ALiConfigClientConfig) (config_client.IConfigClient, error) {
+func newConfigClient(c *LocalConfig) (config_client.IConfigClient, error) {
 	clientConfig := constant.ClientConfig{
-		Endpoint:       c.endpoint + ":8080",
-		NamespaceId:    c.namespaceID,
-		AccessKey:      c.accessKey,
-		SecretKey:      c.secretKey,
+		Endpoint:       c.Endpoint + ":8080",
+		NamespaceId:    c.NamespaceID,
+		AccessKey:      c.AccessKey,
+		SecretKey:      c.SecretKey,
 		TimeoutMs:      3 * 1000,
 		ListenInterval: 30 * 1000,
 	}
@@ -74,8 +74,8 @@ func newConfigClient(c ALiConfigClientConfig) (config_client.IConfigClient, erro
 }
 
 // func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context, ch chan int) error {
-func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context) error {
-	aliConfigClient, err := newConfigClient(*c)
+func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
+	aliConfigClient, err := newConfigClient(c)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context) error {
 	}
 
 	return aliConfigClient.ListenConfig(vo.ConfigParam{
-		DataId:   c.dataID,
-		Group:    c.group,
+		DataId:   c.DataID,
+		Group:    c.Group,
 		OnChange: f,
 	})
 }

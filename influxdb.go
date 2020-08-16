@@ -47,6 +47,7 @@ func pushToInfluxDB(writeAPI api.WriteAPI, pids ...string) {
 	}
 	writeAPI.Flush()
 	wg.Wait()
+	time.Sleep(time.Second * 5)
 }
 
 func processName(pid string) string {

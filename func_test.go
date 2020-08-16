@@ -1,14 +1,25 @@
 package main
 
 import (
-	"fmt"
-	"sync"
 	"testing"
+	"unsafe"
 )
 
 func Benchmark_test(b *testing.B) {
-	a := sync.Once{}
-	a.Do(func() { fmt.Println("first") })
-	a.Do(func() { fmt.Println("second") })
-	fmt.Println(&a == nil)
+	for i := 0; i < b.N; i++ {
+		getCPUUsage("1")
+	}
+}
+
+func Benchmark_ParseInt(b *testing.B) {
+	bt := []byte("12345678")
+	for i := 0; i < b.N; i++ {
+		_ = *(*string)(unsafe.Pointer(&bt))
+		// fmt.Println(str)
+
+		// _, err := strconv.ParseFloat(string(bt), 64)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+	}
 }

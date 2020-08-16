@@ -34,6 +34,7 @@ type AliYunConfig struct {
 	NamespaceID string `yaml:"namespaceID"`
 	AccessKey   string `yaml:"accessKey"`
 	SecretKey   string `yaml:"secretKey"`
+	
 	DataID      string `yaml:"dataID"`
 	Group       string `yaml:"group"`
 }

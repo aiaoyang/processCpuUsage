@@ -2,30 +2,71 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
+	"strconv"
 
 	// _ "net/http/pprof"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/aiaoyang/p08_monitor/common"
 	influxc "github.com/influxdata/influxdb-client-go"
 )
 
-var conf = &ALiConfigClientConfig{}
+// var conf = &ALiConfigClientConfig{}
 
 func init() {
 	initViper()
-	conf.new()
+	flag.StringVar(&pids, "p", "1", "pids of process")
+	flag.Parse()
+	// conf.new()
 }
 
+var pids string
+
 func main() {
-	log.SetFlags(log.Llongfile | log.Ltime)
-	todo := context.TODO()
-	go conf.watchConfigChange(todo)
-	// go http.ListenAndServe("0.0.0.0:10088", nil)
-	genericTODO(nil)
+	p, err := strconv.Atoi(pids)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reciver := make(chan map[string]float64, 0)
+	// ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.TODO()
+	go func() {
+		for {
+			select {
+			case m := <-reciver:
+				fmt.Printf("recive: %v\n", m)
+			default:
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+	pidsChan := make(chan []int32, 0)
+
+	go func(pids int) {
+		for {
+
+			pidsChan <- []int32{int32(pids)}
+			time.Sleep(time.Second * 3)
+		}
+	}(p)
+	// go func() { time.Sleep(time.Second * 5); cancel() }()
+	common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
+
+	// go func() {
+	// 	time.Sleep(time.Second * 5)
+	// 	pids = "1"
+	// }()
+
+	// log.SetFlags(log.Llongfile | log.Ltime)
+	// todo := context.TODO()
+	// go CLocal.watchConfigChange(todo)
+	// // go http.ListenAndServe("0.0.0.0:10088", nil)
+	// genericTODO(nil)
 }
 
 func genericTODO(alarm func(msg interface{})) {
@@ -80,7 +121,7 @@ func genericTODO(alarm func(msg interface{})) {
 			}
 		} else {
 			fmt.Println("nothing happend")
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 5)
 		}
 	}
 }

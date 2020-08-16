@@ -77,7 +77,6 @@ func getAllProcess() map[string][]byte {
 
 // TODO: 缓存上次统计的结果，不必每次计算使用率都读取两次文件内容
 func getCPUUsage(pid string) float64 {
-	log.SetFlags(log.Llongfile)
 	totalCPUTimeChan := make(chan int64, 2)
 	totalThreadTimeChan := make(chan int64, 2)
 
@@ -88,7 +87,7 @@ func getCPUUsage(pid string) float64 {
 	go totalThreadTime(pid, wg, totalThreadTimeChan)
 	wg.Wait()
 
-	time.Sleep(time.Second)
+	time.Sleep(1)
 
 	wg.Add(2)
 	// 获取第二次cpu信息
