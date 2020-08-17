@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 
 	// _ "net/http/pprof"
 
@@ -75,7 +74,12 @@ func genericTODO(alarm func(msg interface{})) {
 		case res := <-reciver:
 			tag := make(map[string]string)
 
-			tag["pid"] = strconv.Itoa(int(res["pid"].(float64)))
+			// pid, ok := res["pid"].(float64)
+
+			// if ok {
+			// 	fmt.Printf("pid: %v\n", pid)
+			// 	tag["pid"] = strconv.Itoa(int(pid))
+			// }
 
 			// 删除不需要res中的pid键
 			delete(res, "pid")
@@ -110,10 +114,10 @@ func genericTODO(alarm func(msg interface{})) {
 
 					// debug 打印
 					fmt.Printf("running %v\n", pids)
-
 				} else { // 如果进程被中断，则循环监听进程列表，直至同名进程启动
 
-					fmt.Printf("pid [%v] is not running\n", pids)
+					// 负值pid设定为不进行进程监控
+					pidsChan <- []int{-1}
 
 					// TODO: 应该触发一次告警,然后尝试重新获取pid
 					alarmOnce.Do(func() {

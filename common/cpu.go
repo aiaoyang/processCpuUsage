@@ -36,20 +36,31 @@ type ProcessCPUStat struct {
 
 // New 进程cpu使用量统计
 func (c *ProcessCPUStat) New(opt int) {
+	// 指针结构 每次调用方法时需要 设置默认值，因为会被中断的进程修改
+	c.isDead = false
+
+	if opt <= 0 {
+		c.isDead = true
+	}
+
 	pidString := strconv.Itoa(int(opt))
-	// c = &ProcessCPUStat{opt, 0, 0, 0, 0, 0}
+
 	fileName := "/proc/" + pidString + "/stat"
+
 	byteSlices, err := HeadLineSplitOfFile(fileName)
 	if err != nil {
 		c.isDead = true
 		return
 	}
+	// 尽量接近文件读入的时间
+	// 生成进程cpu快照时的时间
+	c.time = time.Now().Unix()
 
 	c.utime = byteToUint(byteSlices[13])
 	c.stime = byteToUint(byteSlices[14])
 	c.cutime = byteToUint(byteSlices[15])
 	c.cstime = byteToUint(byteSlices[16])
-	c.time = time.Now().Unix()
+
 	c.used = c.utime + c.stime + c.cutime + c.cstime
 }
 
@@ -95,6 +106,7 @@ func (c *CPUStat) New(opt string) {
 // ProcessesCPUMonitor 进程cpu使用率和系统cpu使用率, 如果需要获取进程cpu使用率
 // 系统cpu使用率： reciver -> map["system"]
 // 进程cpu使用率： reciver -> map[pid]
+// 当pidsChan输出负值时，则只监控系统cpu使用情况
 /*
 	传入pid的方式参考如下
 
