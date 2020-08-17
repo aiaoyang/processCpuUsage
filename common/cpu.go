@@ -5,7 +5,6 @@ import (
 	"log"
 	"runtime"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -110,18 +109,15 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]interface{
 
 	process := &ProcessCPUStat{}
 	system := &CPUStat{}
-	// oldPorcess := &ProcessCPUStat{}
-	// oldSystem := &CPUStat{}
+
+	// 保存上一次系统cpu使用状态
 	oldsys := make(map[int]CPUStat)
+
+	// 保存上一次进程cpu使用状态
 	oldprocess := make(map[int]ProcessCPUStat)
 
-	// 是否未整个函数第一次运行
-	// once := true
-
-	// pid进程是否是第一次 统计
-	// isFirstCount := make(map[int]bool)
-
-	var wg = &sync.WaitGroup{}
+	// 同时统计进程与系统cpu使用量
+	// var wg = &sync.WaitGroup{}
 
 	for {
 		select {
@@ -132,41 +128,25 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]interface{
 
 		case pids := <-pidschan:
 
-			// if once {
-			// 	for _, pid := range pids {
-			// 		isFirstCount[pid] = true
-			// 	}
-			// }
-
 			for _, pid := range pids {
 
+				// 保存 使用率 至指标中
 				metric := make(map[string]interface{})
+
+				// 统计系统核数
 				metric["core_num"] = float64(cpuCoreNum)
 
-				wg.Add(2)
+				// 计算系统cpu总使用量
+				system.New(sysPid)
 
-				// 计算系统cpu总使用率
-				// currSystemCPUCount := &CPUStat{}
-				go func(wg *sync.WaitGroup) {
-					system.New(sysPid)
-					wg.Done()
-				}(wg)
+				// 计算进程cpu使用量
+				process.New(pid)
 
-				//开始计算当前pid进程cpu统计量以及与上一次cpu统计量的变化量
-				// currProcessCPUCount := &ProcessCPUStat{}
-				go func(wg *sync.WaitGroup) {
-					process.New(pid)
-					wg.Done()
-				}(wg)
-
-				wg.Wait()
-				// fmt.Printf("pid %d\toldprocess: %v\toldsystem: %v\n", pid, oldprocess[pid], oldsys[pid])
-
-				// metric["sys_cpu_usage"] = float64(system.used-oldSystem.used) * 100 / float64(system.total-oldSystem.total+1)
 				metric["sys_cpu_usage"] = float64(system.used-oldsys[pid].used) * 100 / float64(system.total-oldsys[pid].total+1)
 
 				// 进程不存在，则只返回系统cpu使用情况
 				if process.isDead {
+					reciver <- metric
 					continue
 				}
 
@@ -174,18 +154,17 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]interface{
 
 				// 计算本次进程cpu和上次进程cpu差异，并与总cpu变化求商得使用率
 				//										进程cpu使用量-上次进程cpu使用量									系统cpu使用量-上次系统cpu使用量						系统cpu核数
+				// 该计算方式与 top 命令一致，做了一点修改：统计的 cpu 使用率 = top数值/cpu核心数
 				metric["process_cpu_usage"] = float64(process.used-oldprocess[pid].used) * 100 / (float64(process.time-oldprocess[pid].time+1) * HZ * float64(cpuCoreNum))
-
-				// // 将本次进程cpu统计结果设置为旧
-				// *oldPorcess = *process
-
-				// // 将本次系统cpu总量果设置为旧
-				// *oldSystem = *system
 
 				reciver <- metric
 
+				// 将本次系统cpu总量果设置为旧
 				oldsys[pid] = *system
+
+				// 将本次进程cpu统计结果设置为旧
 				oldprocess[pid] = *process
+
 			}
 
 		default:

@@ -134,13 +134,11 @@ func genericTODO(alarm func(msg interface{})) {
 					// 查询进程pid是否存在
 					NeedMonitorProcessInfo.PIDS = getProcessPID(NeedMonitorProcessInfo.Name)
 
-					// time.Sleep(time.Second)
 				}
 			} else {
 
 				fmt.Println("nothing happend")
 
-				// time.Sleep(time.Second)
 			}
 
 			time.Sleep(time.Second * 3)
