@@ -64,9 +64,7 @@ func genericTODO(alarm func(msg interface{})) {
 
 	pidsChan := make(chan []int, 0)
 
-	go func(ctx context.Context) {
-		common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
-	}(ctx)
+	go common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
 
 	for {
 		select {
