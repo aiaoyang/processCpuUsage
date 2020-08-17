@@ -154,7 +154,7 @@ func totalCPU() cupStat {
 	}
 
 	total := func() uint64 {
-		// 除数 不能为0
+		// 除数 不能为0, 设置最小为1
 		var tmp uint64 = 1
 		for i := 1; i < len(l)-2; i++ {
 			tmp += byteToUint(l[i])
