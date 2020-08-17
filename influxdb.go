@@ -5,49 +5,31 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	influxc "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
 )
 
-func pushToInfluxDB(writeAPI api.WriteAPI, pids ...string) {
+func pushToInfluxDB(writeAPI api.WriteAPI, tag map[string]string, value map[string]interface{}) {
 	hostName, err := os.Hostname()
 	if err != nil {
 		log.Fatal(err)
 	}
-	// writeAPI := c.WriteAPI("test", "test")
 
-	wg := &sync.WaitGroup{}
-	wg.Add(len(pids))
+	tag["hostname"] = hostName
+	tag["env"] = MyLocalConfig.Env
 
-	pushInflux := func(wg *sync.WaitGroup, hostName, pid string) {
-		// create point
-		p := influxc.NewPoint(
-			"system",
-			map[string]string{
-				"hostname": hostName,
-				"pid":      pid,
-				"env":      CLocal.Env,
-				"process":  processName(pid),
-			},
-			map[string]interface{}{
-				"cpu_usage": getCPUUsage(pid),
-				"mem_usage": getMemUsage(pid),
-			},
-			time.Now())
-		// write asynchronously
-		writeAPI.WritePoint(p)
-		wg.Done()
-	}
+	// create point
+	p := influxc.NewPoint(
+		"skzy",
+		tag,
+		value,
+		time.Now(),
+	)
 
-	for _, pid := range pids {
-		go pushInflux(wg, hostName, pid)
-	}
+	writeAPI.WritePoint(p)
 	writeAPI.Flush()
-	wg.Wait()
-	time.Sleep(time.Second * 5)
 }
 
 func processName(pid string) string {

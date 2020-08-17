@@ -36,7 +36,7 @@ type ProcessCPUStat struct {
 }
 
 // New 进程cpu使用量统计
-func (c *ProcessCPUStat) New(opt int32) {
+func (c *ProcessCPUStat) New(opt int) {
 	pidString := strconv.Itoa(int(opt))
 	// c = &ProcessCPUStat{opt, 0, 0, 0, 0, 0}
 	fileName := "/proc/" + pidString + "/stat"
@@ -104,24 +104,26 @@ func (c *CPUStat) New(opt string) {
 			time.Sleep(duration)
 
 */
-func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]float64, pidschan chan []int32) {
+func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]interface{}, pidschan chan []int) {
 
 	cpuCoreNum := runtime.NumCPU()
 
 	process := &ProcessCPUStat{}
 	system := &CPUStat{}
+	// oldPorcess := &ProcessCPUStat{}
+	// oldSystem := &CPUStat{}
+	oldsys := make(map[int]CPUStat)
+	oldprocess := make(map[int]ProcessCPUStat)
 
-	oldPorcess := &ProcessCPUStat{}
-	oldSystem := &CPUStat{}
+	// 是否未整个函数第一次运行
+	// once := true
+
+	// pid进程是否是第一次 统计
+	// isFirstCount := make(map[int]bool)
 
 	var wg = &sync.WaitGroup{}
 
 	for {
-
-		metric := make(map[string]float64)
-
-		metric["core_num"] = float64(cpuCoreNum)
-
 		select {
 
 		case <-ctx.Done():
@@ -130,7 +132,16 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]float64, p
 
 		case pids := <-pidschan:
 
+			// if once {
+			// 	for _, pid := range pids {
+			// 		isFirstCount[pid] = true
+			// 	}
+			// }
+
 			for _, pid := range pids {
+
+				metric := make(map[string]interface{})
+				metric["core_num"] = float64(cpuCoreNum)
 
 				wg.Add(2)
 
@@ -138,7 +149,6 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]float64, p
 				// currSystemCPUCount := &CPUStat{}
 				go func(wg *sync.WaitGroup) {
 					system.New(sysPid)
-
 					wg.Done()
 				}(wg)
 
@@ -146,13 +156,14 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]float64, p
 				// currProcessCPUCount := &ProcessCPUStat{}
 				go func(wg *sync.WaitGroup) {
 					process.New(pid)
-
 					wg.Done()
 				}(wg)
 
 				wg.Wait()
+				// fmt.Printf("pid %d\toldprocess: %v\toldsystem: %v\n", pid, oldprocess[pid], oldsys[pid])
 
-				metric["sys_cpu_usage"] = float64(system.used-oldSystem.used) * 100 / float64(system.total-oldSystem.total+1)
+				// metric["sys_cpu_usage"] = float64(system.used-oldSystem.used) * 100 / float64(system.total-oldSystem.total+1)
+				metric["sys_cpu_usage"] = float64(system.used-oldsys[pid].used) * 100 / float64(system.total-oldsys[pid].total+1)
 
 				// 进程不存在，则只返回系统cpu使用情况
 				if process.isDead {
@@ -163,16 +174,20 @@ func ProcessesCPUMonitor(ctx context.Context, reciver chan map[string]float64, p
 
 				// 计算本次进程cpu和上次进程cpu差异，并与总cpu变化求商得使用率
 				//										进程cpu使用量-上次进程cpu使用量									系统cpu使用量-上次系统cpu使用量						系统cpu核数
-				metric["process_cpu_usage"] = float64(process.used-oldPorcess.used) * 100 / (float64(process.time-oldPorcess.time+1) * HZ * float64(cpuCoreNum))
+				metric["process_cpu_usage"] = float64(process.used-oldprocess[pid].used) * 100 / (float64(process.time-oldprocess[pid].time+1) * HZ * float64(cpuCoreNum))
 
-				// 将本次进程cpu统计结果设置为旧
-				*oldPorcess = *process
+				// // 将本次进程cpu统计结果设置为旧
+				// *oldPorcess = *process
 
-				// 将本次系统cpu总量果设置为旧
-				*oldSystem = *system
+				// // 将本次系统cpu总量果设置为旧
+				// *oldSystem = *system
 
+				reciver <- metric
+
+				oldsys[pid] = *system
+				oldprocess[pid] = *process
 			}
-			reciver <- metric
+
 		default:
 			time.Sleep(cpuUsageDuration)
 		}

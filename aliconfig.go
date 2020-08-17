@@ -28,13 +28,13 @@ type ALiConfigClientConfig struct {
 
 func (c *ALiConfigClientConfig) new() {
 
-	endpoint := VLocal.GetString("aliyunConfig.endpoint")
-	namespaceID := VLocal.GetString("aliyunConfig.namespaceid")
-	accessKey := VLocal.GetString("aliyunConfig.accessKey")
-	secretKey := VLocal.GetString("aliyunConfig.secretKey")
+	endpoint := LocalViperConfig.GetString("aliyunConfig.endpoint")
+	namespaceID := LocalViperConfig.GetString("aliyunConfig.namespaceid")
+	accessKey := LocalViperConfig.GetString("aliyunConfig.accessKey")
+	secretKey := LocalViperConfig.GetString("aliyunConfig.secretKey")
 
-	dataID := VLocal.GetString("aliyunConfig.dataID")
-	group := VLocal.GetString("aliyunConfig.group")
+	dataID := LocalViperConfig.GetString("aliyunConfig.dataID")
+	group := LocalViperConfig.GetString("aliyunConfig.group")
 
 	fmt.Printf("endpoint: %s\nnamespaceID: %s\naccessKey: %s\nsecretKey: %s\ndataID: %s\ngroup: %s\n",
 		endpoint,
@@ -80,22 +80,22 @@ func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
 		return err
 	}
 
-	f := func(namespace, group, dataID, data string) {
+	fn := func(namespace, group, dataID, data string) {
 		if netWorkDown() {
 			cacheFile, err := getCacheConfigFile()
 			if err != nil {
 				panic(err)
 			}
-			VCloud.ReadConfig(bytes.NewBuffer(cacheFile))
+			AliyunConfigSrv.ReadConfig(bytes.NewBuffer(cacheFile))
 		} else {
-			stringToViperConfig(VCloud, data)
+			stringToViperConfig(data)
 		}
 	}
 
 	return aliConfigClient.ListenConfig(vo.ConfigParam{
 		DataId:   c.DataID,
 		Group:    c.Group,
-		OnChange: f,
+		OnChange: fn,
 	})
 }
 
@@ -145,15 +145,15 @@ func getCacheConfigFile() ([]byte, error) {
 // 	if err != nil {
 // 		return err
 // 	}
-// 	log.Printf("updateConfig: get viper pid: %s\n", VCloud.GetString("processinfo.name"))
-// 	processName := VCloud.GetString("processinfo.name")
+// 	log.Printf("updateConfig: get viper pid: %s\n", AliyunConfigSrv.GetString("processinfo.name"))
+// 	processName := AliyunConfigSrv.GetString("processinfo.name")
 
 // 	pids := getProcessPID(processName)
-// 	GConfig.PID = pids
-// 	GConfig.Name = processName
-// 	GConfig.HostName, _ = os.Hostname()
+// 	NeedMonitorProcessInfo.PID = pids
+// 	NeedMonitorProcessInfo.Name = processName
+// 	NeedMonitorProcessInfo.HostName, _ = os.Hostname()
 
-// 	content, err := yaml.Marshal(GConfig)
+// 	content, err := yaml.Marshal(NeedMonitorProcessInfo)
 // 	if err != nil {
 // 		return err
 // 	}

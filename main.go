@@ -2,126 +2,148 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"strconv"
 
 	// _ "net/http/pprof"
-	"strings"
+
 	"sync"
 	"time"
 
+	"github.com/aiaoyang/newloginserver/logger"
 	"github.com/aiaoyang/p08_monitor/common"
 	influxc "github.com/influxdata/influxdb-client-go"
 )
 
-// var conf = &ALiConfigClientConfig{}
-
 func init() {
 	initViper()
-	flag.StringVar(&pids, "p", "1", "pids of process")
-	flag.Parse()
-	// conf.new()
+	// log.SetFlags(log.Llongfile | log.Ldate)
+	// log.SetOutput(os.Stdout)
 }
 
-var pids string
+// var pids string
 
 func main() {
-	p, err := strconv.Atoi(pids)
-	if err != nil {
-		log.Fatal(err)
-	}
-	reciver := make(chan map[string]float64, 0)
-	// ctx, cancel := context.WithCancel(context.Background())
-	ctx := context.TODO()
-	go func() {
-		for {
-			select {
-			case m := <-reciver:
-				fmt.Printf("recive: %v\n", m)
-			default:
-				time.Sleep(time.Second)
-			}
-		}
-	}()
-	pidsChan := make(chan []int32, 0)
+	// go http.ListenAndServe("0.0.0.0:10088", nil)
 
-	go func(pids int) {
-		for {
+	// log.SetFlags(log.Ltime | log.Llongfile | log.LstdFlags)
+	todo := context.TODO()
 
-			pidsChan <- []int32{int32(pids)}
-			time.Sleep(time.Second * 3)
-		}
-	}(p)
-	// go func() { time.Sleep(time.Second * 5); cancel() }()
-	common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
+	go MyLocalConfig.watchConfigChange(todo)
 
-	// go func() {
-	// 	time.Sleep(time.Second * 5)
-	// 	pids = "1"
-	// }()
-
-	// log.SetFlags(log.Llongfile | log.Ltime)
-	// todo := context.TODO()
-	// go CLocal.watchConfigChange(todo)
-	// // go http.ListenAndServe("0.0.0.0:10088", nil)
-	// genericTODO(nil)
+	genericTODO(nil)
 }
 
 func genericTODO(alarm func(msg interface{})) {
+
 	ctx := context.TODO()
-	c := influxc.NewClient("http://"+CLocal.InfluxDBConfig.Host+":"+CLocal.InfluxDBConfig.Port, "")
+
+	c := influxc.NewClient("http://"+MyLocalConfig.InfluxDBConfig.Host+":"+MyLocalConfig.InfluxDBConfig.Port, "")
 	ok, err := c.Health(ctx)
 	if err != nil {
-		log.Fatal(err)
+		// 如果无法连接到 influxdb 则退出
+		logger.DebugLog.Fatal(err)
 	}
+
+	// 检查 influxdb 连接是否可用
 	if ok.Status != "pass" {
 		log.Fatal("not connect to influxdb")
 	}
+
+	// TODO: influxdb测试数据库，后续添加正式名称
 	writeAPI := c.WriteAPI("test", "test")
+
 	defer c.Close()
 	defer writeAPI.Close()
+
+	reciver := make(chan map[string]interface{}, 0)
 
 	isAlarm := false
 	alarmOnce := sync.Once{}
 	cancelAlarmOnce := sync.Once{}
+
+	pidsChan := make(chan []int, 0)
+
+	go func(ctx context.Context) {
+		common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
+	}(ctx)
+
 	for {
-		if VCloud.GetInt("processinfo.status") == 1 {
-			// fmt.Printf("pids: %s\n", pids)
-			if pids, hasDeadPid := isPidRunning(GConfig.PIDS...); !hasDeadPid {
+		select {
+		case <-ctx.Done():
+			return
 
-				// 推送数据至influxdb
-				pushToInfluxDB(writeAPI, pids...)
+		// 接收到指标参数，则将其推送至influxdb
+		case res := <-reciver:
+			tag := make(map[string]string)
 
-				// 如果之前发生告警则触发告警恢复
-				if isAlarm {
-					cancelAlarmOnce.Do(func() {
-						isAlarm = false
+			tag["pid"] = strconv.Itoa(int(res["pid"].(float64)))
+
+			// 删除不需要res中的pid键
+			delete(res, "pid")
+
+			// debug用
+			fmt.Printf("recive value : %v\n", res)
+
+			// 推送数据至influxdb
+			pushToInfluxDB(writeAPI, tag, res)
+
+		default:
+			log.Println("here")
+			if AliyunConfigSrv.GetInt("processinfo.status") == 1 {
+
+				// 如果进程仍在运行，则将 pids 发送给 通道 然后让指标收集函数进行处理
+				if pids, hasDeadPid := isPidRunning(NeedMonitorProcessInfo.PIDS...); !hasDeadPid {
+
+					pidsChan <- pids
+
+					// 如果之前发生告警则触发告警恢复
+					if isAlarm {
+
+						cancelAlarmOnce.Do(func() {
+
+							isAlarm = false
+							/*
+								告警恢复逻辑写在此处
+							*/
+							alarmOnce = sync.Once{}
+
+						})
+					}
+
+					// debug 打印
+					fmt.Printf("running %v\n", pids)
+
+				} else { // 如果进程被中断，则循环监听进程列表，直至同名进程启动
+
+					fmt.Printf("pid [%v] is not running\n", pids)
+
+					// TODO: 应该触发一次告警,然后尝试重新获取pid
+					alarmOnce.Do(func() {
+
+						isAlarm = true
 						/*
-							告警恢复逻辑写在此处
+							告警触发逻辑写在此处
+							alarm()
 						*/
-						alarmOnce = sync.Once{}
-					})
-				}
+						cancelAlarmOnce = sync.Once{}
 
-				fmt.Printf("running %s\n", strings.Join(pids, ","))
+					})
+
+					// 查询进程pid是否存在
+					NeedMonitorProcessInfo.PIDS = getProcessPID(NeedMonitorProcessInfo.Name)
+
+					// time.Sleep(time.Second)
+				}
 			} else {
-				GConfig.PIDS = getProcessPID(GConfig.Name)
-				// TODO: 应该触发一次告警,然后尝试重新获取pid
-				alarmOnce.Do(func() {
-					isAlarm = true
-					/*
-						告警触发逻辑写在此处
-					*/
-					cancelAlarmOnce = sync.Once{}
-				})
-				fmt.Printf("not running %s\n", strings.Join(pids, ","))
-				time.Sleep(time.Second)
+
+				fmt.Println("nothing happend")
+
+				// time.Sleep(time.Second)
 			}
-		} else {
-			fmt.Println("nothing happend")
-			time.Sleep(time.Second * 5)
+
+			time.Sleep(time.Second * 3)
 		}
 	}
 }

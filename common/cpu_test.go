@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+func Test_initMap(t *testing.T) {
+	m := make(map[int]CPUStat)
+	fmt.Printf("M: %v\n", m[1])
+}
 func Benchmark_CPUUsage(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -18,11 +22,11 @@ func Benchmark_CPUUsage(b *testing.B) {
 		cancel()
 	}()
 	reciver := make(chan map[string]float64, 0)
-	pidsChan := make(chan []int32, 0)
+	pidsChan := make(chan []int, 0)
 
 	go func() {
 		for {
-			pidsChan <- []int32{46787}
+			pidsChan <- []int{46787}
 
 			// 修改传入pid的时间会反映在测试结果时间中
 			time.Sleep(time.Millisecond * 500)

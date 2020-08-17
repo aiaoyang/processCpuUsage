@@ -125,7 +125,7 @@ func init() {
 }
 
 // ProcessMemUsage 进程内存使用率
-func ProcessMemUsage(ctx context.Context, reciver chan map[string]float64, pidChan chan []int32) {
+func ProcessMemUsage(ctx context.Context, reciver chan map[string]float64, pidChan chan []int) {
 	processMem := &ProcessMemStat{}
 	sysMem := &MemStat{}
 	metric := make(map[string]float64, 0)
