@@ -11,8 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aiaoyang/newloginserver/logger"
-	"github.com/aiaoyang/p08_monitor/common"
+	"github.com/aiaoyang/processCpuUsage/common"
 	influxc "github.com/influxdata/influxdb-client-go"
 )
 
@@ -43,7 +42,7 @@ func genericTODO(alarm func(msg interface{})) {
 	ok, err := c.Health(ctx)
 	if err != nil {
 		// 如果无法连接到 influxdb 则退出
-		logger.DebugLog.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// 检查 influxdb 连接是否可用
@@ -132,7 +131,7 @@ func genericTODO(alarm func(msg interface{})) {
 					})
 
 					// 查询进程pid是否存在
-					NeedMonitorProcessInfo.PIDS = getProcessPID(NeedMonitorProcessInfo.Name)
+					NeedMonitorProcessInfo.PIDS = common.getProcessPID(NeedMonitorProcessInfo.Name)
 
 				}
 			} else {

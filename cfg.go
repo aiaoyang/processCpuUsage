@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aiaoyang/newloginserver/logger"
 	"github.com/spf13/viper"
 )
 
@@ -99,6 +98,6 @@ func stringToViperConfig(s string) {
 	if err != nil {
 		panic(err)
 	}
-	NeedMonitorProcessInfo.PIDS = getProcessPID(NeedMonitorProcessInfo.Name)
-	logger.DebugLog.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
+	NeedMonitorProcessInfo.PIDS = common.getProcessPID(NeedMonitorProcessInfo.Name)
+	logPrintf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }
