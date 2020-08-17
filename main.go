@@ -87,7 +87,6 @@ func genericTODO(alarm func(msg interface{})) {
 			pushToInfluxDB(writeAPI, tag, res)
 
 		default:
-			log.Println("here")
 			if AliyunConfigSrv.GetInt("processinfo.status") == 1 {
 
 				// 如果进程仍在运行，则将 pids 发送给 通道 然后让指标收集函数进行处理
