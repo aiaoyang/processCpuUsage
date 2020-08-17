@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -81,15 +80,7 @@ func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
 	}
 
 	fn := func(namespace, group, dataID, data string) {
-		if netWorkDown() {
-			cacheFile, err := getCacheConfigFile()
-			if err != nil {
-				panic(err)
-			}
-			AliyunConfigSrv.ReadConfig(bytes.NewBuffer(cacheFile))
-		} else {
-			stringToViperConfig(data)
-		}
+		stringToViperConfig(data)
 	}
 
 	return aliConfigClient.ListenConfig(vo.ConfigParam{
