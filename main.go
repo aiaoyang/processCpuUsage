@@ -93,7 +93,7 @@ func genericTODO(alarm func(msg interface{})) {
 			if AliyunConfigSrv.GetInt("processinfo.status") == 1 {
 
 				// 如果进程仍在运行，则将 pids 发送给 通道 然后让指标收集函数进行处理
-				if pids, hasDeadPid := isPidRunning(NeedMonitorProcessInfo.PIDS...); !hasDeadPid {
+				if pids, hasDeadPid := common.IsPidRunning(NeedMonitorProcessInfo.PIDS...); !hasDeadPid {
 
 					pidsChan <- pids
 
@@ -131,7 +131,7 @@ func genericTODO(alarm func(msg interface{})) {
 					})
 
 					// 查询进程pid是否存在
-					NeedMonitorProcessInfo.PIDS = common.getProcessPID(NeedMonitorProcessInfo.Name)
+					NeedMonitorProcessInfo.PIDS = common.GetProcessPID(NeedMonitorProcessInfo.Name)
 
 				}
 			} else {

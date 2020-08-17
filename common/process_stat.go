@@ -8,7 +8,8 @@ import (
 	"strconv"
 )
 
-func isPidRunning(pids ...int) ([]int, bool) {
+// IsPidRunning 进程是否运行
+func IsPidRunning(pids ...int) ([]int, bool) {
 
 	deadPids := []int{}
 	hasDeadPid := false
@@ -31,12 +32,13 @@ func isPidRunning(pids ...int) ([]int, bool) {
 	return pids, false
 }
 
-func getProcessPID(name string) []int {
+// GetProcessPID 获取进程pid
+func GetProcessPID(name string) []int {
 
 	res := []int{}
 
 	// 获取所有进程信息 map[pid]cmdline
-	processes := getAllProcess()
+	processes := GetAllProcess()
 
 	for k, v := range processes {
 		if bytes.Contains(v, []byte(name)) {
@@ -47,8 +49,8 @@ func getProcessPID(name string) []int {
 	return res
 }
 
-// 获取所有运行的进程 map[pid]processName
-func getAllProcess() map[int][]byte {
+// GetAllProcess 获取所有运行的进程 map[pid]processName
+func GetAllProcess() map[int][]byte {
 
 	res := make(map[int][]byte)
 
