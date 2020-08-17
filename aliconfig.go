@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"time"
 
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
@@ -90,76 +86,42 @@ func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
 	})
 }
 
-// 检查阿里云首页网络是否联通
-func netWorkDown() bool {
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://www.aliyun.com", nil)
-	client.Timeout = time.Second * 3
-	req.Header.Set("Content-Type", "text/html")
-	if err != nil {
-		log.Println(err)
-		return true
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println(err)
-		return true
-	}
-	if resp.StatusCode == 200 {
-		log.Printf("net work is up \n")
-		return false
-	}
-	ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return true
-}
-
-func getCacheConfigFile() ([]byte, error) {
-	dir := "./cache/config/"
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if len(files) == 1 {
-		content, err := ioutil.ReadFile(dir + files[0].Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-		return content, nil
-	}
-	return nil, fmt.Errorf("config file not found")
-}
-
-// func (c *ALiConfigClientConfig) updateConfig() error {
-// 	log.Println("update config to alicloud")
-// 	aliConfigClient, err := newConfigClient(*c)
+// // 检查阿里云首页网络是否联通
+// func netWorkDown() bool {
+// 	client := http.Client{}
+// 	req, err := http.NewRequest("GET", "https://www.aliyun.com", nil)
+// 	client.Timeout = time.Second * 3
+// 	req.Header.Set("Content-Type", "text/html")
 // 	if err != nil {
-// 		return err
+// 		log.Println(err)
+// 		return true
 // 	}
-// 	log.Printf("updateConfig: get viper pid: %s\n", AliyunConfigSrv.GetString("processinfo.name"))
-// 	processName := AliyunConfigSrv.GetString("processinfo.name")
-
-// 	pids := getProcessPID(processName)
-// 	NeedMonitorProcessInfo.PID = pids
-// 	NeedMonitorProcessInfo.Name = processName
-// 	NeedMonitorProcessInfo.HostName, _ = os.Hostname()
-
-// 	content, err := yaml.Marshal(NeedMonitorProcessInfo)
+// 	resp, err := client.Do(req)
 // 	if err != nil {
-// 		return err
+// 		log.Println(err)
+// 		return true
 // 	}
-// 	isOk, err := aliConfigClient.PublishConfig(
-// 		vo.ConfigParam{
-// 			DataId:  c.dataID,
-// 			Group:   c.group,
-// 			Content: fmt.Sprintf("%s", content),
-// 		},
-// 	)
+// 	if resp.StatusCode == 200 {
+// 		log.Printf("net work is up \n")
+// 		return false
+// 	}
+// 	ioutil.ReadAll(resp.Body)
+// 	resp.Body.Close()
+// 	return true
+// }
+
+// func getCacheConfigFile() ([]byte, error) {
+// 	dir := "./cache/config/"
+// 	files, err := ioutil.ReadDir(dir)
 // 	if err != nil {
-// 		return err
+// 		log.Fatal(err)
 // 	}
-// 	if !isOk {
-// 		return fmt.Errorf("update config failed")
+// 	if len(files) == 1 {
+// 		content, err := ioutil.ReadFile(dir + files[0].Name())
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 		return content, nil
 // 	}
-// 	return nil
+// 	return nil, fmt.Errorf("config file not found")
 // }
