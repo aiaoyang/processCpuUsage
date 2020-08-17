@@ -11,6 +11,10 @@ import (
 // IsPidRunning 进程是否运行
 func IsPidRunning(pids ...int) ([]int, bool) {
 
+	if len(pids) == 0 {
+		return nil, true
+	}
+
 	deadPids := []int{}
 	hasDeadPid := false
 
