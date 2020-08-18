@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 
 	// _ "net/http/pprof"
 
-	"sync"
 	"time"
 
 	"github.com/aiaoyang/processCpuUsage/common"
@@ -30,10 +30,11 @@ func main() {
 
 	go MyLocalConfig.watchConfigChange(todo)
 
-	genericTODO(nil)
+	alarmer := NewAlarmer(time.Second * 30)
+	genericTODO(alarmer)
 }
 
-func genericTODO(alarm func(msg interface{})) {
+func genericTODO(alarmer AlarmActor) {
 
 	ctx := context.TODO()
 
@@ -57,11 +58,10 @@ func genericTODO(alarm func(msg interface{})) {
 
 	reciver := make(chan map[string]interface{}, 0)
 
-	isAlarm := false
-	alarmOnce := sync.Once{}
-	cancelAlarmOnce := sync.Once{}
-
 	pidsChan := make(chan []int, 0)
+
+	// 告警监控
+	go alarmer.Recive(ctx)
 
 	go common.ProcessesCPUMonitor(ctx, reciver, pidsChan)
 
@@ -74,12 +74,20 @@ func genericTODO(alarm func(msg interface{})) {
 		case res := <-reciver:
 			tag := make(map[string]string)
 
-			// pid, ok := res["pid"].(float64)
+			// 如果有pid这个key，则将其写入tag，否则则是只有系统cpu使用量
+			pid, ok := res["pid"].(float64)
 
-			// if ok {
-			// 	fmt.Printf("pid: %v\n", pid)
-			// 	tag["pid"] = strconv.Itoa(int(pid))
-			// }
+			if ok {
+
+				tag["pid"] = strconv.Itoa(int(pid))
+
+				alarmer.Recover("告警恢复")
+
+			} else {
+
+				alarmer.Alarm("告警发生")
+
+			}
 
 			// 删除不需要res中的pid键
 			delete(res, "pid")
@@ -98,20 +106,6 @@ func genericTODO(alarm func(msg interface{})) {
 
 					pidsChan <- pids
 
-					// 如果之前发生告警则触发告警恢复
-					if isAlarm {
-
-						cancelAlarmOnce.Do(func() {
-
-							isAlarm = false
-							/*
-								告警恢复逻辑写在此处
-							*/
-							alarmOnce = sync.Once{}
-
-						})
-					}
-
 					// debug 打印
 					fmt.Printf("running %v\n", pids)
 				} else { // 如果进程被中断，则循环监听进程列表，直至同名进程启动
@@ -119,20 +113,10 @@ func genericTODO(alarm func(msg interface{})) {
 					// 负值pid设定为不进行进程监控
 					pidsChan <- []int{-1}
 
-					// TODO: 应该触发一次告警,然后尝试重新获取pid
-					alarmOnce.Do(func() {
-
-						isAlarm = true
-						/*
-							告警触发逻辑写在此处
-							alarm()
-						*/
-						cancelAlarmOnce = sync.Once{}
-
-					})
-
 					// 查询进程pid是否存在
 					NeedMonitorProcessInfo.PIDS = common.GetProcessPID(NeedMonitorProcessInfo.Name)
+
+					fmt.Printf("not running %v\n", pids)
 
 				}
 			} else {
@@ -142,6 +126,7 @@ func genericTODO(alarm func(msg interface{})) {
 			}
 
 			time.Sleep(time.Second * 3)
+
 		}
 	}
 }
