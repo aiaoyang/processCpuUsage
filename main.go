@@ -81,11 +81,9 @@ func genericTODO(alarmer AlarmActor) {
 
 				tag["pid"] = strconv.Itoa(int(pid))
 
-				alarmer.Recover("告警恢复")
-
 			} else {
 
-				alarmer.Alarm("告警发生")
+				alarmer.Alarm("告警发生: 进程未运行")
 
 			}
 
@@ -96,7 +94,7 @@ func genericTODO(alarmer AlarmActor) {
 			fmt.Printf("recive value : %v\n", res)
 
 			// 推送数据至influxdb
-			pushToInfluxDB(writeAPI, tag, res)
+			pushToInfluxDB(writeAPI, alarmer, tag, res)
 
 		default:
 			if AliyunConfigSrv.GetInt("processinfo.status") == 1 {

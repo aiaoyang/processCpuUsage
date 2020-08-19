@@ -162,6 +162,23 @@ func ProcessMemUsage(ctx context.Context, reciver chan map[string]float64, pidCh
 	}
 }
 
+// ProcessMemUsageOnce 统计一次内存使用量
+func ProcessMemUsageOnce(pid string) float64 {
+	processMem := &ProcessMemStat{}
+
+	pidInt, err := strconv.Atoi(pid)
+	if err != nil {
+		return 0.0
+	}
+	return processMem.Gen(pidInt).Usage()
+}
+
+// SystemMemUsageOnce 统计一次系统内存使用量
+func SystemMemUsageOnce() float64 {
+	sys := &MemStat{}
+	return sys.Gen(sysPid).Usage()
+}
+
 // TotalMem 系统内存总量
 func TotalMem() uint64 {
 	line, err := HeadLineSplitOfFile(sysMemFileName)
