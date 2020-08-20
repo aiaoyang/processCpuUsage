@@ -3,15 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 )
-
-// // AlarmMsg 告警消息
-// type AlarmMsg struct {
-// 	key   string
-// 	value interface{}
-// }
 
 // Reciver 告警信息接收者
 type Reciver interface {
@@ -45,8 +38,7 @@ type AlarmActor interface {
 
 // Alarmer 告警结构体
 type Alarmer struct {
-	// 暂时未使用
-	mu *sync.Mutex
+	// mu *sync.Mutex
 
 	alarmChan chan struct{}
 
@@ -68,7 +60,7 @@ type Alarmer struct {
 // NewAlarmer 初始化一个alarmer
 func NewAlarmer(duration time.Duration) *Alarmer {
 	return &Alarmer{
-		mu: &sync.Mutex{},
+		// mu: &sync.Mutex{},
 
 		alarmChan:   make(chan struct{}, 0),
 		recoverChan: make(chan struct{}, 0),
@@ -81,9 +73,8 @@ func NewAlarmer(duration time.Duration) *Alarmer {
 
 // IsAlarming 是否发生告警
 func (a *Alarmer) IsAlarming() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	return a.isAlarming
+	res := a.isAlarming
+	return res
 }
 
 // Recive 接收告警信息
@@ -101,15 +92,15 @@ func (a *Alarmer) Recive(ctx context.Context) {
 
 		// 告警通道收到信息，如果信息为告警发生则进行告警，如果信息为告警恢复 则设置告警状态为未发生告警
 		case <-a.alarmChan:
-			if !a.IsAlarming() {
+			if !a.isAlarming {
 				a.alarm()
 			}
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Second)
 		case <-a.recoverChan:
 			a.recover()
 
 		default:
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Second)
 		}
 	}
 }
@@ -132,7 +123,7 @@ func (a *Alarmer) alarm() {
 
 // Recover Recover
 func (a *Alarmer) Recover(msg string) {
-	if !a.IsAlarming() {
+	if !a.isAlarming {
 		return
 	}
 	a.AlarmMsg = msg

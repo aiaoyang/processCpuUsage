@@ -73,6 +73,9 @@ func (m *ProcessMemStat) Gen(pid int) *ProcessMemStat {
 // Used 进程内存使用量
 func (m *ProcessMemStat) Used() uint64 {
 	// resident为页大小，linux页一般为4KB
+	if m == nil {
+		return 0
+	}
 	return m.resident * 4
 }
 
