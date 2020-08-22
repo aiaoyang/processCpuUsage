@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aiaoyang/processCpuUsage/common"
+	"github.com/aiaoyang/processCpuUsage/sysusage"
 	"github.com/spf13/viper"
 )
 
@@ -99,6 +99,6 @@ func stringToViperConfig(s string) {
 	if err != nil {
 		panic(err)
 	}
-	NeedMonitorProcessInfo.PIDS = common.GetProcessPID(NeedMonitorProcessInfo.Name)
+	NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Name)
 	log.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }
