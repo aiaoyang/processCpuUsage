@@ -24,11 +24,11 @@ func NewInfluxDBSender(api api.WriteAPI) metric.Sender {
 }
 
 // Send 实现 customMetric Sender 的Send方法
-func (s *InfluxDBSender) Send(k map[string]string, v map[string]interface{}) {
+func (s *InfluxDBSender) Send(tag map[string]string, value map[string]interface{}) {
 	point := influxc.NewPoint(
 		meansure,
-		k,
-		v,
+		tag,
+		value,
 		time.Now(),
 	)
 	s.API.WritePoint(point)
