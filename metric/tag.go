@@ -37,7 +37,7 @@ func (m Tag) Copy() Tag {
 
 // CopyToMap 值拷贝
 func (m Tag) CopyToMap() map[TagType]string {
-	tmp := make(map[string]string)
+	tmp := make(map[TagType]string)
 	for k, v := range m {
 		tmp[k] = v
 	}
