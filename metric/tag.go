@@ -39,7 +39,7 @@ func (m Tag) Copy() Tag {
 func (m Tag) CopyToMap() map[TagType]string {
 	tmp := make(map[string]string)
 	for k, v := range m {
-		tmp[string(k)] = v
+		tmp[k] = v
 	}
 	return tmp
 }
