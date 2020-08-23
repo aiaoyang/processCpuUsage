@@ -114,8 +114,6 @@ func job(hostname, env string) {
 			sysJobMetric.Metric.Insert(metric.SYSCPU, sysCPU)
 			sysJobMetric.Metric.Insert(metric.SYSMEM, sysMEM)
 
-			fmt.Printf("sys metric : %v\n", sysJobMetric)
-
 			sysJobMetric.Send()
 
 			time.Sleep(time.Second * 10)
