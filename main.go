@@ -78,6 +78,7 @@ func job(hostname, env string) {
 
 		processJobMetric := metric.NewCustomMetric(sender)
 
+		// TODO: pid传入方式
 		pids := []int{1}
 		processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
 		processJobMetric.Tag.Insert(metric.ENV, env)
