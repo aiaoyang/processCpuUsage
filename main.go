@@ -57,7 +57,6 @@ func job(hostname, env string) {
 	writeAPI := c.WriteAPI("test", "test")
 
 	go func() {
-		log.Println("hello world")
 
 		time.Sleep(time.Second * 10)
 
@@ -92,7 +91,6 @@ func job(hostname, env string) {
 
 			}
 
-			fmt.Printf("process metric : %v\n", processJobMetric)
 			processJobMetric.Send()
 			time.Sleep(time.Second * 5)
 
@@ -110,7 +108,6 @@ func job(hostname, env string) {
 
 		for {
 
-			fmt.Println("here")
 			sysCPU := sysusage.SysCPUUsageOnce(duration)
 			sysMEM := sysusage.SystemMemUsageOnce()
 
