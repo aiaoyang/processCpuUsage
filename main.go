@@ -68,9 +68,10 @@ func job(hostname, env string) {
 	sender := sender.NewInfluxDBSender(writeAPI)
 
 	go func() {
-		processJobMetric := metric.NewCustomMetric(sender)
 
 		duration := time.Millisecond * 100
+
+		processJobMetric := metric.NewCustomMetric(sender)
 
 		pids := []int{1}
 		processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
@@ -98,9 +99,9 @@ func job(hostname, env string) {
 
 	go func() {
 
-		sysJobMetric := metric.NewCustomMetric(sender)
-
 		duration := time.Millisecond * 100
+
+		sysJobMetric := metric.NewCustomMetric(sender)
 
 		sysJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
 		sysJobMetric.Tag.Insert(metric.ENV, env)
