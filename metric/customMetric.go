@@ -3,9 +3,8 @@ package metric
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
-
-	"github.com/qiniu/x/log"
 )
 
 // CustomMetric CustomMetric

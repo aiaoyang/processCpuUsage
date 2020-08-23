@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/aiaoyang/processCpuUsage/metric"
+	"github.com/aiaoyang/processCpuUsage/sender"
 	"github.com/aiaoyang/processCpuUsage/sysusage"
-	yssender "github.com/aiaoyang/processCpuUsage/ysSender"
 
 	// _ "net/http/pprof"
 
@@ -57,6 +57,7 @@ func job(hostname, env string) {
 	writeAPI := c.WriteAPI("test", "test")
 
 	go func() {
+		log.Println("hello world")
 
 		time.Sleep(time.Second * 10)
 
@@ -64,9 +65,9 @@ func job(hostname, env string) {
 
 	}()
 	defer c.Close()
-	defer writeAPI.Close()
+	// defer writeAPI.Close()
 
-	sender := &yssender.MySender{API: writeAPI}
+	sender := sender.NewInfluxDBSender(writeAPI)
 
 	go func() {
 		processJobMetric := metric.NewCustomMetric(sender)

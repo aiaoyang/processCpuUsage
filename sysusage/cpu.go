@@ -6,20 +6,6 @@ import (
 	"time"
 )
 
-// None some interface need implement func sign, but do nothing
-// const None = "this value do nothing"
-
-// HZ grep 'define HZ' /usr/include/asm*/param.h
-// const HZ = 100
-
-// ICPUStat cpu状态接口
-// type ICPUStat interface {
-// 	Pid() string
-// 	Usage(total uint64) Usage
-// 	Used() uint64
-// 	Total() uint64
-// }
-
 // ProcessCPUStat 进程cpu状态
 type ProcessCPUStat struct {
 	pid    string
