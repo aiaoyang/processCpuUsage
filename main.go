@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -39,7 +40,13 @@ func job(hostname, env string) {
 
 	ctx := context.TODO()
 
-	c := influxc.NewClient("http://"+MyLocalConfig.InfluxDBConfig.Host+":"+MyLocalConfig.InfluxDBConfig.Port, "")
+	influxdbString := fmt.Sprintf("http://%s:%s",
+		MyLocalConfig.InfluxDBConfig.Host,
+		MyLocalConfig.InfluxDBConfig.Port,
+	)
+
+	c := influxc.NewClient(influxdbString, "")
+	defer c.Close()
 
 	ok, err := c.Health(ctx)
 	if err != nil {
@@ -54,6 +61,7 @@ func job(hostname, env string) {
 
 	// TODO: influxdb测试数据库，后续添加正式名称
 	writeAPI := c.WriteAPI("test", "test")
+	defer writeAPI.Close()
 
 	go func() {
 
@@ -62,8 +70,6 @@ func job(hostname, env string) {
 		writeAPI.Flush()
 
 	}()
-	defer c.Close()
-	// defer writeAPI.Close()
 
 	sender := sender.NewInfluxDBSender(writeAPI)
 
