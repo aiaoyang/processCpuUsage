@@ -105,8 +105,8 @@ func job(hostname, env string) {
 
 		duration := time.Millisecond * 100
 
-		sysJobMetric.Tag.Insert("hostname", hostname)
-		sysJobMetric.Tag.Insert("env", env)
+		sysJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
+		sysJobMetric.Tag.Insert(metric.ENV, env)
 
 		for {
 
