@@ -14,14 +14,6 @@ const (
 	ENV TagType = "env"
 )
 
-// func init() {
-// 	hostname, err := os.Hostname()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	// MyTag.Insert("hostname", hostname)
-// }
-
 // NewTag 初始化一个 Tag
 func NewTag() Tag {
 	return make(Tag)
