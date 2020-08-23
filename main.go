@@ -75,8 +75,8 @@ func job(hostname, env string) {
 		duration := time.Millisecond * 100
 
 		pids := []int{1}
-		processJobMetric.Tag.Insert("hostname", hostname)
-		processJobMetric.Tag.Insert("env", env)
+		processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
+		processJobMetric.Tag.Insert(metric.ENV, env)
 		for {
 
 			for _, pid := range pids {

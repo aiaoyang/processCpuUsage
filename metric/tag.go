@@ -3,8 +3,15 @@ package metric
 // Tag influxdb 标签
 type Tag map[string]string
 
-// MyTag 系统环境相关标签
-// var MyTag Tag
+type TagType string
+
+const (
+	// HOSTNAME 主机名
+	HOSTNAME TagType = "hostname"
+
+	// ENV 主机环境属性，测试或正式或提神
+	ENV TagType = "env"
+)
 
 // func init() {
 // 	hostname, err := os.Hostname()
@@ -29,7 +36,7 @@ func (m Tag) Copy() Tag {
 }
 
 // CopyToMap 值拷贝
-func (m Tag) CopyToMap() map[string]string {
+func (m Tag) CopyToMap() map[TagType]string {
 	tmp := make(map[string]string)
 	for k, v := range m {
 		tmp[string(k)] = v
@@ -38,7 +45,7 @@ func (m Tag) CopyToMap() map[string]string {
 }
 
 // Insert 添加键值对
-func (m Tag) Insert(k string, v string) {
+func (m Tag) Insert(k TagType, v string) {
 	m[k] = v
 }
 

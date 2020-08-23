@@ -25,16 +25,16 @@ type AlarmActor interface {
 	IsAlarming() bool
 }
 
-// // AlarmType 枚举体 告警类型
-// type AlarmType int
+// AlarmType 枚举体 告警类型
+type AlarmType int
 
-// const (
-// 	CPU  AlarmType = iota // 0
-// 	MEM                   // 1
-// 	FD                    // 2
-// 	NET                   // 3
-// 	DISK                  // 4
-// )
+const (
+	CPU  AlarmType = iota // 0
+	MEM                   // 1
+	FD                    // 2
+	NET                   // 3
+	DISK                  // 4
+)
 
 // Alarmer 告警结构体
 type Alarmer struct {
