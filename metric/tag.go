@@ -1,8 +1,9 @@
 package metric
 
 // Tag influxdb 标签
-type Tag map[string]string
+type Tag map[TagType]string
 
+// TagType 标签类型
 type TagType string
 
 const (
@@ -36,10 +37,10 @@ func (m Tag) Copy() Tag {
 }
 
 // CopyToMap 值拷贝
-func (m Tag) CopyToMap() map[TagType]string {
-	tmp := make(map[TagType]string)
+func (m Tag) CopyToMap() map[string]string {
+	tmp := make(map[string]string)
 	for k, v := range m {
-		tmp[k] = v
+		tmp[string(k)] = v
 	}
 	return tmp
 }
@@ -62,7 +63,7 @@ func (m Tag) Add(subs ...Tag) {
 func (m Tag) AddMap(subs ...map[string]string) {
 	for i := 0; i < len(subs); i++ {
 		for k, v := range subs[i] {
-			m[k] = v
+			m[TagType(k)] = v
 		}
 	}
 }
