@@ -61,7 +61,6 @@ func job(hostname, env string) {
 
 	// TODO: influxdb测试数据库，后续添加正式名称
 	writeAPI := c.WriteAPI("test", "test")
-	defer writeAPI.Close()
 
 	go func() {
 
