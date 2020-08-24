@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"log"
 	"os"
 	"strconv"
 )
@@ -37,6 +36,7 @@ type ProcessMemStat struct {
 	lib      uint64
 	data     uint64
 	dt       uint64
+	isDead   bool
 }
 
 // MemStat 系统内存使用状态
@@ -52,7 +52,11 @@ type MemStat struct {
 // ProcessMemUsageOnce 统计一次内存使用量
 func ProcessMemUsageOnce(pid int) Usage {
 	processMem := &ProcessMemStat{}
-	return processMem.New(pid).Usage()
+	processMem.New(pid)
+	if processMem.isDead {
+		return -1
+	}
+	return processMem.Usage()
 }
 
 // SystemMemUsageOnce 统计一次系统内存使用量
@@ -100,7 +104,7 @@ func (m *ProcessMemStat) New(pid int) *ProcessMemStat {
 
 	line, err := HeadLineSplitOfFile(filename)
 	if err != nil {
-		log.Printf("err: %s\n", err.Error())
+		m.isDead = true
 		return nil
 	}
 	m.pid = p
@@ -111,6 +115,7 @@ func (m *ProcessMemStat) New(pid int) *ProcessMemStat {
 	m.lib = byteToUint(line[4])
 	m.data = byteToUint(line[5])
 	m.dt = byteToUint(line[6])
+	m.isDead = false
 	return m
 }
 

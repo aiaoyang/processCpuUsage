@@ -20,7 +20,6 @@ func NewInfluxDBSender(api api.WriteAPI) metric.Sender {
 	return &InfluxDBSender{
 		API: api,
 	}
-
 }
 
 // Send 实现 customMetric Sender 的Send方法

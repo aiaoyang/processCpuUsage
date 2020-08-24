@@ -1,5 +1,11 @@
 package metric
 
+import (
+	"reflect"
+
+	"github.com/aiaoyang/processCpuUsage/sysusage"
+)
+
 type MetricType string
 
 const (
@@ -59,7 +65,14 @@ func (m Metric) CopyToMap() map[string]interface{} {
 
 // Insert 添加键值对
 func (m Metric) Insert(k MetricType, v interface{}) {
-	m[k] = v
+	switch reflect.TypeOf(v).Kind() {
+	case reflect.Float64:
+		m[k] = float64(v.(sysusage.Usage))
+	case reflect.Int:
+		m[k] = v.(int)
+	default:
+		m[k] = -1
+	}
 }
 
 // Add 合并指标

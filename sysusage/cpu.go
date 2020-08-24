@@ -1,10 +1,17 @@
 package sysusage
 
 import (
+	"fmt"
+	"math"
 	"runtime"
 	"strconv"
 	"time"
 )
+
+// sec = jiffies / HZ ; here - HZ = number of ticks per second
+
+// HZ hz
+const HZ = 100.0
 
 // ProcessCPUStat 进程cpu状态
 type ProcessCPUStat struct {
@@ -14,7 +21,7 @@ type ProcessCPUStat struct {
 	cutime uint64
 	cstime uint64
 	used   uint64
-	time   int64
+	time   float64
 	isDead bool
 }
 
@@ -38,8 +45,7 @@ func (c *ProcessCPUStat) New(pid int) {
 	}
 	// 尽量接近文件读入的时间
 	// 生成进程cpu快照时的时间
-	c.time = time.Now().Unix()
-
+	c.time = float64(time.Now().UnixNano()) / float64(1e9)
 	c.utime = byteToUint(byteSlices[13])
 	c.stime = byteToUint(byteSlices[14])
 	c.cutime = byteToUint(byteSlices[15])
@@ -101,6 +107,7 @@ func (c *ProcessCPUStat) sub(sub *ProcessCPUStat) *ProcessCPUStat {
 		used: c.used - sub.used,
 		time: c.time - sub.time,
 	}
+
 }
 
 ///////////////////////////////////////////////
@@ -120,7 +127,13 @@ func ProcessCPUUsageOnce(pid int, duration time.Duration) Usage {
 		return Usage(-1)
 	}
 	delta := t2.sub(t1)
-	return Usage(delta.used) / Usage(delta.time+1) / Usage(runtime.NumCPU())
+	fmt.Printf("delta time : %.2f\n", delta.time)
+	finalUsage := Usage(delta.used) / Usage(delta.time*float64(runtime.NumCPU()))
+	isNaN := math.IsNaN(float64(finalUsage))
+	if isNaN {
+		return -1
+	}
+	return finalUsage
 }
 
 // SysCPUUsageOnce 统计一次系统cpu使用率
@@ -135,90 +148,10 @@ func SysCPUUsageOnce(duration time.Duration) Usage {
 		return Usage(-1)
 	}
 	delta := t2.sub(t1)
-	return Usage(delta.used) / Usage(delta.total+1)
+	finalUsage := Usage(delta.used) * 100 / Usage(delta.total)
+	isNaN := math.IsNaN(float64(finalUsage))
+	if isNaN {
+		return -1
+	}
+	return finalUsage
 }
-
-// ProcessesCPUMonitor 进程cpu使用率和系统cpu使用率, 如果需要获取进程cpu使用率
-// 系统cpu使用率： reciver -> map["system"]
-// 进程cpu使用率： reciver -> map[pid]
-// 当pidsChan输出负值时，则只监控系统cpu使用情况
-/*
-	传入pid的方式参考如下
-
-			pidsChan := make(chan []string, 0)
-			pidsChan <- pids
-			time.Sleep(duration)
-
-*/
-// func ProcessesCPUMonitor(ctx context.Context, reciver chan<- metric.Metric, pidschan chan []int) {
-
-// 	cpuCoreNum := runtime.NumCPU()
-
-// 	process := &ProcessCPUStat{}
-// 	system := &CPUStat{}
-
-// 	// 保存上一次系统cpu使用状态
-// 	oldsys := make(map[int]CPUStat)
-
-// 	// 保存上一次进程cpu使用状态
-// 	oldprocess := make(map[int]ProcessCPUStat)
-
-// 	// 同时统计进程与系统cpu使用量
-// 	// var wg = &sync.WaitGroup{}
-
-// 	for {
-// 		select {
-
-// 		case <-ctx.Done():
-// 			log.Println("stopping")
-// 			return
-
-// 		case pids := <-pidschan:
-
-// 			for _, pid := range pids {
-
-// 				// 保存 使用率 至指标中
-// 				metric := make(metric.Metric)
-
-// 				// 计算系统cpu总使用量
-// 				system.New(sysPid)
-
-// 				// 计算进程cpu使用量
-// 				process.New(pid)
-
-// 				sysCPUUsage := Usage(system.used-oldsys[pid].used) * 100 / Usage(system.total-oldsys[pid].total+1)
-
-// 				// 统计系统核数
-// 				metric.Insert("core_num", Usage(cpuCoreNum))
-// 				metric.Insert("sys_cpu_usage", sysCPUUsage)
-
-// 				// 进程不存在，则只返回系统cpu使用情况
-// 				if process.isDead {
-// 					reciver <- metric
-// 					continue
-// 				}
-
-// 				// 计算本次进程cpu和上次进程cpu差异，并与总cpu变化求商得使用率
-// 				//										进程cpu使用量-上次进程cpu使用量									系统cpu使用量-上次系统cpu使用量						系统cpu核数
-// 				// 该计算方式与 top 命令一致，做了一点修改：统计的 cpu 使用率 = top数值/cpu核心数
-
-// 				processCPUUsage := Usage(process.used-oldprocess[pid].used) * 100 / (Usage(process.time-oldprocess[pid].time+1) * HZ * Usage(cpuCoreNum))
-
-// 				metric.Insert("pid", Usage(pid))
-// 				metric.Insert("process_cpu_usage", processCPUUsage)
-
-// 				reciver <- metric
-
-// 				// 将本次系统cpu总量果设置为旧
-// 				oldsys[pid] = *system
-
-// 				// 将本次进程cpu统计结果设置为旧
-// 				oldprocess[pid] = *process
-
-// 			}
-
-// 		default:
-// 			time.Sleep(cpuUsageDuration)
-// 		}
-// 	}
-// }

@@ -22,9 +22,9 @@ func init() {
 }
 
 func main() {
-	todo := context.TODO()
+	ctx := context.TODO()
 
-	go MyLocalConfig.watchConfigChange(todo)
+	MyLocalConfig.watchConfigChange(ctx)
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -74,30 +74,30 @@ func job(hostname, env string) {
 
 	go func() {
 
-		duration := time.Millisecond * 100
+		duration := time.Millisecond * 300
 
 		processJobMetric := metric.NewCustomMetric(sender)
 
-		// TODO: pid传入方式
-		pids := []int{1}
 		processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
 		processJobMetric.Tag.Insert(metric.ENV, env)
 		for {
 
-			for _, pid := range pids {
+			for _, pid := range NeedMonitorProcessInfo.PIDS {
 
 				processCPU := sysusage.ProcessCPUUsageOnce(pid, duration)
+
 				processMEM := sysusage.ProcessMemUsageOnce(pid)
 				fd := sysusage.OpenFD(pid)
 
-				processJobMetric.Metric.Insert(metric.PID, metric.MetricType(strconv.Itoa(pid)))
+				processJobMetric.Tag.Insert(metric.PID, strconv.Itoa(pid))
 				processJobMetric.Metric.Insert(metric.PROCESS_CPU, processCPU)
 				processJobMetric.Metric.Insert(metric.PROCESS_MEM, processMEM)
 				processJobMetric.Metric.Insert(metric.FD, fd)
 
+				processJobMetric.Send()
+
 			}
 
-			processJobMetric.Send()
 			time.Sleep(time.Second * 5)
 
 		}
@@ -105,12 +105,13 @@ func job(hostname, env string) {
 
 	go func() {
 
-		duration := time.Millisecond * 100
+		duration := time.Millisecond * 300
 
 		sysJobMetric := metric.NewCustomMetric(sender)
 
 		sysJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
 		sysJobMetric.Tag.Insert(metric.ENV, env)
+		sysJobMetric.Tag.Insert(metric.PID, strconv.Itoa(0))
 
 		for {
 
@@ -127,156 +128,3 @@ func job(hostname, env string) {
 	}()
 	select {}
 }
-
-/*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- */
-
-// func genericTODO() {
-
-// 	ctx := context.TODO()
-
-// 	c := influxc.NewClient("http://"+MyLocalConfig.InfluxDBConfig.Host+":"+MyLocalConfig.InfluxDBConfig.Port, "")
-// 	ok, err := c.Health(ctx)
-// 	if err != nil {
-// 		// 如果无法连接到 influxdb 则退出
-// 		log.Fatal(err)
-// 	}
-
-// 	// 检查 influxdb 连接是否可用
-// 	if ok.Status != "pass" {
-// 		log.Fatal("not connect to influxdb")
-// 	}
-
-// 	// TODO: influxdb测试数据库，后续添加正式名称
-// 	writeAPI := c.WriteAPI("test", "test")
-
-// 	defer c.Close()
-// 	defer writeAPI.Close()
-
-// 	reciver := make(chan metric.Metric, 0)
-
-// 	pidsChan := make(chan []int, 0)
-
-// 	// 告警监控
-
-// 	go sysusage.ProcessCPUUsageOnce(0, time.Second)
-
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			return
-
-// 		// 接收到指标参数，则将其推送至influxdb
-// 		case res := <-reciver:
-// 			tag := make(map[string]string)
-
-// 			// 如果有pid这个key，则将其写入tag，否则则是只有系统cpu使用量
-// 			pid, ok := res["pid"].(float64)
-
-// 			if ok {
-
-// 				tag["pid"] = strconv.Itoa(int(pid))
-
-// 			}
-// 			// else {
-
-// 			// alarmer.Alarm("告警发生: 进程未运行")
-
-// 			// }
-
-// 			// 删除不需要res中的pid键
-// 			delete(res, "pid")
-
-// 			// debug用
-// 			fmt.Printf("recive value : %v\n", res)
-
-// 			// 推送数据至influxdb
-// 			pushToInfluxDB(writeAPI, tag, res)
-
-// 		default:
-// 			if AliyunConfigSrv.GetInt("processinfo.status") == 1 {
-
-// 				// 如果进程仍在运行，则将 pids 发送给 通道 然后让指标收集函数进行处理
-// 				if pids, hasDeadPid := sysusage.IsPidRunning(NeedMonitorProcessInfo.PIDS...); !hasDeadPid {
-
-// 					pidsChan <- pids
-
-// 					// debug 打印
-// 					fmt.Printf("running %v\n", pids)
-// 				} else { // 如果进程被中断，则循环监听进程列表，直至同名进程启动
-
-// 					// 负值pid设定为不进行进程监控
-// 					pidsChan <- []int{-1}
-
-// 					// 查询进程pid是否存在
-// 					NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Name)
-
-// 					fmt.Printf("not running %v\n", pids)
-
-// 				}
-// 			} else {
-
-// 				fmt.Println("nothing happend")
-
-// 			}
-
-// 			time.Sleep(time.Second * 3)
-
-// 		}
-// 	}
-// }

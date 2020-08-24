@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
@@ -80,6 +81,18 @@ func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
 		stringToViperConfig(data)
 	}
 
+	// 获取第一次配置
+	conf, err := aliConfigClient.GetConfig(vo.ConfigParam{
+		DataId:   c.DataID,
+		Group:    c.Group,
+		OnChange: fn,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	stringToViperConfig(conf)
+
+	// 开始监听配置变化
 	return aliConfigClient.ListenConfig(vo.ConfigParam{
 		DataId:   c.DataID,
 		Group:    c.Group,

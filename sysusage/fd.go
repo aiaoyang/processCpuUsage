@@ -9,8 +9,7 @@ import (
 func OpenFD(pid int) Usage {
 	f, err := ioutil.ReadDir("/proc/" + strconv.Itoa(pid) + "/fd")
 	if err != nil {
-		return 0
+		return -1
 	}
-
 	return Usage(len(f))
 }

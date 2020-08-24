@@ -48,7 +48,7 @@ type InfluxDBConfig struct {
 
 var (
 	// NeedMonitorProcessInfo 被监控的进程状态信息
-	NeedMonitorProcessInfo = &Config{ProcessInfo{Status: 0}}
+	NeedMonitorProcessInfo = Config{ProcessInfo{Status: 0}}
 )
 var (
 	// AliyunConfigSrv 阿里云配置文件
@@ -95,7 +95,7 @@ func stringToViperConfig(s string) {
 		panic(err)
 	}
 	// 配置中心配置改变，同步到进程监控配置
-	err = AliyunConfigSrv.Unmarshal(NeedMonitorProcessInfo)
+	err = AliyunConfigSrv.Unmarshal(&NeedMonitorProcessInfo)
 	if err != nil {
 		panic(err)
 	}
