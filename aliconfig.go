@@ -59,6 +59,7 @@ func newConfigClient(c *LocalConfig) (config_client.IConfigClient, error) {
 		SecretKey:      c.SecretKey,
 		TimeoutMs:      3 * 1000,
 		ListenInterval: 30 * 1000,
+		LogLevel:       "warn",
 	}
 
 	configClient, err := clients.CreateConfigClient(map[string]interface{}{
@@ -70,7 +71,6 @@ func newConfigClient(c *LocalConfig) (config_client.IConfigClient, error) {
 	return configClient, nil
 }
 
-// func (c *ALiConfigClientConfig) watchConfigChange(ctx context.Context, ch chan int) error {
 func (c *LocalConfig) watchConfigChange(ctx context.Context) error {
 	aliConfigClient, err := newConfigClient(c)
 	if err != nil {

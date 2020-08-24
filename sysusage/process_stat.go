@@ -9,10 +9,11 @@ import (
 )
 
 // IsPidRunning 进程是否运行
+// 返回未运行的进程pid
 func IsPidRunning(pids ...int) ([]int, bool) {
 
 	if len(pids) == 0 {
-		return nil, true
+		return nil, false
 	}
 
 	deadPids := []int{}
@@ -30,10 +31,10 @@ func IsPidRunning(pids ...int) ([]int, bool) {
 	}
 
 	if hasDeadPid {
-		return deadPids, true
+		return deadPids, false
 	}
 
-	return pids, false
+	return nil, true
 }
 
 // GetProcessPID 获取进程pid

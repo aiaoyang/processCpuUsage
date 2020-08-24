@@ -49,18 +49,14 @@ type InfluxDBConfig struct {
 var (
 	// NeedMonitorProcessInfo 被监控的进程状态信息
 	NeedMonitorProcessInfo = Config{ProcessInfo{Status: 0}}
-)
-var (
+
 	// AliyunConfigSrv 阿里云配置文件
 	AliyunConfigSrv *viper.Viper
-)
 
-// LocalViperConfig 本地配置文件
-var (
-	// viper 本地配置
+	// LocalViperConfig viper 本地配置
 	LocalViperConfig *viper.Viper
 
-	// config 本地配置
+	// MyLocalConfig config 本地配置
 	MyLocalConfig = LocalConfig{}
 )
 

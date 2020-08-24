@@ -1,7 +1,6 @@
 package sysusage
 
 import (
-	"fmt"
 	"math"
 	"runtime"
 	"strconv"
@@ -25,8 +24,10 @@ type ProcessCPUStat struct {
 	isDead bool
 }
 
-// New 进程cpu使用量统计
-func (c *ProcessCPUStat) New(pid int) {
+// NewProcessCPUStat 进程cpu使用量统计
+func NewProcessCPUStat(pid int) *ProcessCPUStat {
+	c := &ProcessCPUStat{strconv.Itoa(pid), 0, 0, 0, 0, 0, 0, false}
+
 	// 指针结构 每次调用方法时需要 设置默认值，因为会被中断的进程修改
 	c.isDead = false
 
@@ -34,14 +35,12 @@ func (c *ProcessCPUStat) New(pid int) {
 		c.isDead = true
 	}
 
-	pidString := strconv.Itoa(pid)
-
-	fileName := "/proc/" + pidString + "/stat"
+	fileName := "/proc/" + strconv.Itoa(pid) + "/stat"
 
 	byteSlices, err := HeadLineSplitOfFile(fileName)
 	if err != nil {
 		c.isDead = true
-		return
+		return c
 	}
 	// 尽量接近文件读入的时间
 	// 生成进程cpu快照时的时间
@@ -52,6 +51,7 @@ func (c *ProcessCPUStat) New(pid int) {
 	c.cstime = byteToUint(byteSlices[16])
 
 	c.used = c.utime + c.stime + c.cutime + c.cstime
+	return c
 }
 
 // SysCPUStat 系统cpu状态
@@ -79,14 +79,14 @@ func (c *SysCPUStat) sub(sub *SysCPUStat) *SysCPUStat {
 	}
 }
 
-// New 系统cpu使用量统计
-func (c *SysCPUStat) New(pid int) {
-	// c = &CPUStat{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+// NewSysCPUStat 系统cpu使用量统计
+func NewSysCPUStat() *SysCPUStat {
+	c := &SysCPUStat{0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0}
 	fileName := "/proc/stat"
 	byteSlices, err := HeadLineSplitOfFile(fileName)
 	if err != nil {
 		c.isDead = true
-		return
+		return c
 	}
 
 	c.user = byteToUint(byteSlices[1])
@@ -100,6 +100,7 @@ func (c *SysCPUStat) New(pid int) {
 
 	c.total = c.user + c.nice + c.system + c.idle + c.iowait + c.irq + c.softirq + c.steal
 	c.used = c.total - c.idle
+	return c
 }
 
 func (c *ProcessCPUStat) sub(sub *ProcessCPUStat) *ProcessCPUStat {
@@ -107,51 +108,64 @@ func (c *ProcessCPUStat) sub(sub *ProcessCPUStat) *ProcessCPUStat {
 		used: c.used - sub.used,
 		time: c.time - sub.time,
 	}
-
 }
 
 ///////////////////////////////////////////////
-//   					单次cpu使用量统计								//
+//   					单次进程CPU使用量统计						//
 ///////////////////////////////////////////////
 
 // ProcessCPUUsageOnce 统计一次进程cpu使用率
 func ProcessCPUUsageOnce(pid int, duration time.Duration) Usage {
-	t1 := &ProcessCPUStat{}
-	t1.New(pid)
+
+	t1 := NewProcessCPUStat(pid)
+
 	time.Sleep(duration)
-	t2 := &ProcessCPUStat{}
-	t2.New(pid)
+
+	t2 := NewProcessCPUStat(pid)
 
 	if t1.isDead || t2.isDead {
 		// 如果初始化失败，返回-1
 		return Usage(-1)
 	}
+
 	delta := t2.sub(t1)
-	fmt.Printf("delta time : %.2f\n", delta.time)
+
 	finalUsage := Usage(delta.used) / Usage(delta.time*float64(runtime.NumCPU()))
+
 	isNaN := math.IsNaN(float64(finalUsage))
 	if isNaN {
 		return -1
 	}
+
 	return finalUsage
 }
 
+///////////////////////////////////////////////
+//						单次系统CPU使用量统计 					//
+///////////////////////////////////////////////
+
 // SysCPUUsageOnce 统计一次系统cpu使用率
 func SysCPUUsageOnce(duration time.Duration) Usage {
-	t1 := &SysCPUStat{}
-	t1.New(sysPid)
+
+	t1 := NewSysCPUStat()
+
 	time.Sleep(duration)
-	t2 := &SysCPUStat{}
-	t2.New(sysPid)
+
+	t2 := NewSysCPUStat()
+
 	if t1.isDead || t2.isDead {
 		// 如果初始化失败，返回-1
 		return Usage(-1)
 	}
+
 	delta := t2.sub(t1)
+
 	finalUsage := Usage(delta.used) * 100 / Usage(delta.total)
+
 	isNaN := math.IsNaN(float64(finalUsage))
 	if isNaN {
 		return -1
 	}
+
 	return finalUsage
 }

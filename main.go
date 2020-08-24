@@ -22,6 +22,7 @@ func init() {
 }
 
 func main() {
+
 	ctx := context.TODO()
 
 	MyLocalConfig.watchConfigChange(ctx)
@@ -50,11 +51,9 @@ func job(hostname, env string) {
 
 	ok, err := c.Health(ctx)
 	if err != nil {
-		// 如果无法连接到 influxdb 则退出
 		log.Fatal(err)
 	}
 
-	// 检查 influxdb 连接是否可用
 	if ok.Status != "pass" {
 		log.Fatal("not connect to influxdb")
 	}
@@ -72,59 +71,107 @@ func job(hostname, env string) {
 
 	sender := sender.NewInfluxDBSender(writeAPI)
 
-	go func() {
+	go processMon(sender)
+	go systemMon(sender)
+	go healthMon()
 
-		duration := time.Millisecond * 300
+	select {}
+}
 
-		processJobMetric := metric.NewCustomMetric(sender)
+func processMon(sender metric.Sender) {
 
-		processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
-		processJobMetric.Tag.Insert(metric.ENV, env)
-		for {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-			for _, pid := range NeedMonitorProcessInfo.PIDS {
+	env := MyLocalConfig.Env
 
-				processCPU := sysusage.ProcessCPUUsageOnce(pid, duration)
+	duration := time.Millisecond * 300
 
-				processMEM := sysusage.ProcessMemUsageOnce(pid)
-				fd := sysusage.OpenFD(pid)
+	processJobMetric := metric.NewCustomMetric(sender)
 
-				processJobMetric.Tag.Insert(metric.PID, strconv.Itoa(pid))
-				processJobMetric.Metric.Insert(metric.PROCESS_CPU, processCPU)
-				processJobMetric.Metric.Insert(metric.PROCESS_MEM, processMEM)
-				processJobMetric.Metric.Insert(metric.FD, fd)
+	processJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
+	processJobMetric.Tag.Insert(metric.ENV, env)
+	for {
 
-				processJobMetric.Send()
+		for _, pid := range NeedMonitorProcessInfo.PIDS {
+
+			processCPU := sysusage.ProcessCPUUsageOnce(pid, duration)
+
+			processMEM := sysusage.ProcessMemUsageOnce(pid)
+
+			load1 := sysusage.Load()[sysusage.Load1]
+
+			fd := sysusage.OpenFD(pid)
+
+			processJobMetric.Tag.Insert(metric.PID, strconv.Itoa(pid))
+			processJobMetric.Metric.Insert(metric.PROCESS_CPU, processCPU)
+			processJobMetric.Metric.Insert(metric.PROCESS_MEM, processMEM)
+			processJobMetric.Metric.Insert(metric.FD, fd)
+			processJobMetric.Metric.Insert(metric.LOAD1, load1)
+
+			processJobMetric.Send()
+
+		}
+
+		time.Sleep(time.Second * 5)
+
+	}
+}
+
+func systemMon(sender metric.Sender) {
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	env := MyLocalConfig.Env
+
+	duration := time.Millisecond * 300
+
+	sysJobMetric := metric.NewCustomMetric(sender)
+
+	sysJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
+	sysJobMetric.Tag.Insert(metric.ENV, env)
+	sysJobMetric.Tag.Insert(metric.PID, strconv.Itoa(0))
+
+	for {
+
+		sysCPU := sysusage.SysCPUUsageOnce(duration)
+		sysMEM := sysusage.SystemMemUsageOnce()
+
+		sysJobMetric.Metric.Insert(metric.SYSCPU, sysCPU)
+		sysJobMetric.Metric.Insert(metric.SYSMEM, sysMEM)
+
+		sysJobMetric.Send()
+
+		time.Sleep(time.Second * 5)
+	}
+}
+
+func healthMon() {
+	for {
+
+		log.Printf("pid is : %v, name is : %s\n",
+			NeedMonitorProcessInfo.PIDS,
+			NeedMonitorProcessInfo.Name,
+		)
+
+		if _, isRunning := sysusage.IsPidRunning(NeedMonitorProcessInfo.PIDS...); !isRunning {
+
+			tmppid := sysusage.GetProcessPID(NeedMonitorProcessInfo.Name)
+
+			if len(tmppid) != 0 {
+
+				NeedMonitorProcessInfo.PIDS = tmppid
+
+				log.Printf("changed pid is : %v\n", NeedMonitorProcessInfo.PIDS)
 
 			}
-
-			time.Sleep(time.Second * 5)
-
 		}
-	}()
 
-	go func() {
-
-		duration := time.Millisecond * 300
-
-		sysJobMetric := metric.NewCustomMetric(sender)
-
-		sysJobMetric.Tag.Insert(metric.HOSTNAME, hostname)
-		sysJobMetric.Tag.Insert(metric.ENV, env)
-		sysJobMetric.Tag.Insert(metric.PID, strconv.Itoa(0))
-
-		for {
-
-			sysCPU := sysusage.SysCPUUsageOnce(duration)
-			sysMEM := sysusage.SystemMemUsageOnce()
-
-			sysJobMetric.Metric.Insert(metric.SYSCPU, sysCPU)
-			sysJobMetric.Metric.Insert(metric.SYSMEM, sysMEM)
-
-			sysJobMetric.Send()
-
-			time.Sleep(time.Second * 10)
-		}
-	}()
-	select {}
+		time.Sleep(time.Second * 5)
+	}
 }
