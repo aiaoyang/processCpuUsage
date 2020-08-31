@@ -16,10 +16,10 @@ type Config struct {
 
 // ProcessInfo 监控进程的信息
 type ProcessInfo struct {
-	HostName string `yaml:"hostName"`
-	PIDS     []int  `yaml:"pid"`
-	Name     string `yaml:"name"`
-	Status   int    `yaml:"status"`
+	HostName string   `yaml:"hostName"`
+	PIDS     []int    `yaml:"pid"`
+	Names    []string `yaml:"names"`
+	Status   int      `yaml:"status"`
 }
 
 // LocalConfig 本地配置文件
@@ -95,6 +95,6 @@ func stringToViperConfig(s string) {
 	if err != nil {
 		panic(err)
 	}
-	NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Name)
+	NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Names...)
 	log.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }

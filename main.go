@@ -157,12 +157,12 @@ func healthMon() {
 
 		log.Printf("pid is : %v, name is : %s\n",
 			NeedMonitorProcessInfo.PIDS,
-			NeedMonitorProcessInfo.Name,
+			NeedMonitorProcessInfo.Names,
 		)
 
 		if _, isRunning := sysusage.IsPidRunning(NeedMonitorProcessInfo.PIDS...); !isRunning {
 
-			tmppid := sysusage.GetProcessPID(NeedMonitorProcessInfo.Name)
+			tmppid := sysusage.GetProcessPID(NeedMonitorProcessInfo.Names...)
 
 			if len(tmppid) != 0 {
 

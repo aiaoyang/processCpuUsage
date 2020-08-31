@@ -38,7 +38,8 @@ func IsPidRunning(pids ...int) ([]int, bool) {
 }
 
 // GetProcessPID 获取进程pid
-func GetProcessPID(name string) []int {
+// TODO:大量进程的情况下需要优化
+func GetProcessPID(names ...string) []int {
 
 	res := []int{}
 
@@ -46,8 +47,10 @@ func GetProcessPID(name string) []int {
 	processes := GetAllProcess()
 
 	for k, v := range processes {
-		if bytes.Contains(v, []byte(name)) {
-			res = append(res, k)
+		for _, name := range names {
+			if bytes.Contains(v, []byte(name)) {
+				res = append(res, k)
+			}
 		}
 	}
 
