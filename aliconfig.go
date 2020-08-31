@@ -53,13 +53,14 @@ func (c *ALiConfigClientConfig) new() {
 // 生成阿里云 configClient
 func newConfigClient(c *LocalConfig) (config_client.IConfigClient, error) {
 	clientConfig := constant.ClientConfig{
-		Endpoint:       c.Endpoint + ":8080",
-		NamespaceId:    c.NamespaceID,
-		AccessKey:      c.AccessKey,
-		SecretKey:      c.SecretKey,
-		TimeoutMs:      3 * 1000,
-		ListenInterval: 30 * 1000,
-		LogLevel:       "warn",
+		Endpoint:        c.Endpoint + ":8080",
+		NamespaceId:     c.NamespaceID,
+		AccessKey:       c.AccessKey,
+		SecretKey:       c.SecretKey,
+		TimeoutMs:       3 * 1000,
+		ListenInterval:  30 * 1000,
+		UpdateThreadNum: 1,
+		LogLevel:        "warn",
 	}
 
 	configClient, err := clients.CreateConfigClient(map[string]interface{}{
