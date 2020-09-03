@@ -17,7 +17,7 @@ type Config struct {
 // ProcessInfo 监控进程的信息
 type ProcessInfo struct {
 	HostName string   `yaml:"hostName"`
-	PIDS     []int    `yaml:"pid"`
+	PIDS     []int    `yaml:"pids"`
 	Names    []string `yaml:"names"`
 	Status   int      `yaml:"status"`
 }
@@ -96,5 +96,6 @@ func stringToViperConfig(s string) {
 		panic(err)
 	}
 	NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Names...)
+	log.Printf("config : %v\n", NeedMonitorProcessInfo)
 	log.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }

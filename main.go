@@ -22,7 +22,7 @@ func init() {
 }
 
 func main() {
-
+	log.SetFlags(log.Llongfile | log.Ldate)
 	ctx := context.TODO()
 
 	MyLocalConfig.watchConfigChange(ctx)
@@ -112,6 +112,7 @@ func processMon(sender metric.Sender) {
 			processJobMetric.Metric.Insert(metric.LOAD1, load1)
 
 			processJobMetric.Send()
+			time.Sleep(time.Millisecond * 100)
 
 		}
 
