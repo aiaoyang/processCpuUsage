@@ -32,9 +32,6 @@ const (
 
 	// FD 进程文件打开数
 	FD MetricType = "fd"
-
-	// PID 进程pid
-	PID = "pid"
 )
 
 // Metric 重新封装map指标

@@ -12,6 +12,9 @@ const (
 
 	// ENV 主机环境属性，测试或正式或提神
 	ENV TagType = "env"
+
+	// PID 进程pid
+	PID = "pid"
 )
 
 // NewTag 初始化一个 Tag
