@@ -8,24 +8,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aiaoyang/processCpuUsage/metric"
-	"github.com/aiaoyang/processCpuUsage/sender"
-	"github.com/aiaoyang/processCpuUsage/sysusage"
+	"github.com/aiaoyang/processCpuUsage/configs"
+	"github.com/aiaoyang/processCpuUsage/pkg/metric"
+	"github.com/aiaoyang/processCpuUsage/pkg/sender"
+	"github.com/aiaoyang/processCpuUsage/pkg/sysusage"
 
 	// _ "net/http/pprof"
 
 	influxc "github.com/influxdata/influxdb-client-go"
 )
 
-func init() {
-	initViper()
-}
-
 func main() {
 	log.SetFlags(log.Llongfile | log.Ldate)
-	ctx := context.TODO()
-
-	MyLocalConfig.watchConfigChange(ctx)
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -42,8 +36,8 @@ func job(hostname, env string) {
 	ctx := context.TODO()
 
 	influxdbString := fmt.Sprintf("http://%s:%s",
-		MyLocalConfig.InfluxDBConfig.Host,
-		MyLocalConfig.InfluxDBConfig.Port,
+		configs.MyLocalConfig.InfluxDBConfig.Host,
+		configs.MyLocalConfig.InfluxDBConfig.Port,
 	)
 
 	c := influxc.NewClient(influxdbString, "")
@@ -85,7 +79,7 @@ func processMon(sender metric.Sender) {
 		log.Fatal(err)
 	}
 
-	env := MyLocalConfig.Env
+	env := configs.MyLocalConfig.Env
 
 	duration := time.Millisecond * 300
 
@@ -95,7 +89,7 @@ func processMon(sender metric.Sender) {
 	processJobMetric.Tag.Insert(metric.ENV, env)
 	for {
 
-		for _, pid := range NeedMonitorProcessInfo.PIDS {
+		for _, pid := range configs.NeedMonitorProcessInfo.PIDS {
 
 			processCPU := sysusage.ProcessCPUUsageOnce(pid, duration)
 
@@ -128,7 +122,7 @@ func systemMon(sender metric.Sender) {
 		log.Fatal(err)
 	}
 
-	env := MyLocalConfig.Env
+	env := configs.MyLocalConfig.Env
 
 	duration := time.Millisecond * 300
 
@@ -157,19 +151,19 @@ func healthMon() {
 	for {
 
 		log.Printf("pid is : %v, name is : %s\n",
-			NeedMonitorProcessInfo.PIDS,
-			NeedMonitorProcessInfo.Names,
+			configs.NeedMonitorProcessInfo.PIDS,
+			configs.NeedMonitorProcessInfo.Names,
 		)
 
-		if _, isRunning := sysusage.IsPidRunning(NeedMonitorProcessInfo.PIDS...); !isRunning {
+		if _, isRunning := sysusage.IsPidRunning(configs.NeedMonitorProcessInfo.PIDS...); !isRunning {
 
-			tmppid := sysusage.GetProcessPID(NeedMonitorProcessInfo.Names...)
+			tmppid := sysusage.GetProcessPID(configs.NeedMonitorProcessInfo.Names...)
 
 			if len(tmppid) != 0 {
 
-				NeedMonitorProcessInfo.PIDS = tmppid
+				configs.NeedMonitorProcessInfo.PIDS = tmppid
 
-				log.Printf("changed pid is : %v\n", NeedMonitorProcessInfo.PIDS)
+				log.Printf("changed pid is : %v\n", configs.NeedMonitorProcessInfo.PIDS)
 
 			}
 		}

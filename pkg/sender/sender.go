@@ -3,7 +3,7 @@ package sender
 import (
 	"time"
 
-	"github.com/aiaoyang/processCpuUsage/metric"
+	"github.com/aiaoyang/processCpuUsage/pkg/metric"
 	influxc "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
 )

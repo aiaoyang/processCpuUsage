@@ -1,11 +1,12 @@
-package main
+package configs
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/aiaoyang/processCpuUsage/sysusage"
+	"github.com/aiaoyang/processCpuUsage/pkg/sysusage"
 	"github.com/spf13/viper"
 )
 
@@ -60,7 +61,7 @@ var (
 	MyLocalConfig = LocalConfig{}
 )
 
-func initViper() {
+func init() {
 	// 阿里云配置文件初始化
 	AliyunConfigSrv = viper.New()
 	AliyunConfigSrv.SetConfigType("yaml")
@@ -79,6 +80,9 @@ func initViper() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx := context.TODO()
+	MyLocalConfig.watchConfigChange(ctx)
 
 	fmt.Printf("local Config : %v\n", MyLocalConfig)
 }

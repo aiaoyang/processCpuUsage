@@ -3,7 +3,7 @@ package metric
 import (
 	"reflect"
 
-	"github.com/aiaoyang/processCpuUsage/sysusage"
+	"github.com/aiaoyang/processCpuUsage/pkg/sysusage"
 )
 
 type MetricType string
