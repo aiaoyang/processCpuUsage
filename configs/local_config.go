@@ -2,56 +2,23 @@ package configs
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	nacos "github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
-
 	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
-// ALiConfigClientConfig 阿里云 configClient需要的参数信息
-type ALiConfigClientConfig struct {
-	endpoint    string
-	namespaceID string
-	accessKey   string
-	secretKey   string
-
-	dataID string
-	group  string
+// LocalConfig 本地配置文件
+type LocalConfig struct {
+	AliYunConfig   `yaml:"aliyunConfig"`
+	InfluxDBConfig `yaml:"influxDBConfig"`
+	Env            string `yaml:"env"`
 }
 
-func (c *ALiConfigClientConfig) new() {
-
-	endpoint := LocalViperConfig.GetString("aliyunConfig.endpoint")
-	namespaceID := LocalViperConfig.GetString("aliyunConfig.namespaceid")
-	accessKey := LocalViperConfig.GetString("aliyunConfig.accessKey")
-	secretKey := LocalViperConfig.GetString("aliyunConfig.secretKey")
-
-	dataID := LocalViperConfig.GetString("aliyunConfig.dataID")
-	group := LocalViperConfig.GetString("aliyunConfig.group")
-
-	fmt.Printf("endpoint: %s\nnamespaceID: %s\naccessKey: %s\nsecretKey: %s\ndataID: %s\ngroup: %s\n",
-		endpoint,
-		namespaceID,
-		accessKey,
-		secretKey,
-		dataID,
-		group,
-	)
-
-	c.endpoint = endpoint
-	c.namespaceID = namespaceID
-	c.accessKey = accessKey
-	c.secretKey = secretKey
-	c.dataID = dataID
-	c.group = group
-}
-
-// 生成阿里云 configClient
-func newConfigClient(c *LocalConfig) (config_client.IConfigClient, error) {
+// 连接阿里云配置中心
+func newConfigClient(c *LocalConfig) (nacos.IConfigClient, error) {
 	clientConfig := constant.ClientConfig{
 		Endpoint:        c.Endpoint + ":8080",
 		NamespaceId:     c.NamespaceID,

@@ -10,37 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config 进程状态配置
-type Config struct {
-	ProcessInfo `yaml:"processInfo"`
-}
-
-// ProcessInfo 监控进程的信息
-type ProcessInfo struct {
-	HostName string   `yaml:"hostName"`
-	PIDS     []int    `yaml:"pids"`
-	Names    []string `yaml:"names"`
-	Status   int      `yaml:"status"`
-}
-
-// LocalConfig 本地配置文件
-type LocalConfig struct {
-	AliYunConfig   `yaml:"aliyunConfig"`
-	InfluxDBConfig `yaml:"influxDBConfig"`
-	Env            string `yaml:"env"`
-}
-
-// AliYunConfig 本地配置中阿里云相关访问权限字段设置
-type AliYunConfig struct {
-	Endpoint    string `yaml:"endpoint"`
-	NamespaceID string `yaml:"namespaceID"`
-	AccessKey   string `yaml:"accessKey"`
-	SecretKey   string `yaml:"secretKey"`
-
-	DataID string `yaml:"dataID"`
-	Group  string `yaml:"group"`
-}
-
 // InfluxDBConfig 本地配置中influxdb相关配置
 type InfluxDBConfig struct {
 	Host string `yaml:"host"`
@@ -49,7 +18,7 @@ type InfluxDBConfig struct {
 
 var (
 	// NeedMonitorProcessInfo 被监控的进程状态信息
-	NeedMonitorProcessInfo = Config{ProcessInfo{Status: 0}}
+	NeedMonitorProcessInfo = ProcessStat{ProcessInfo{Status: 0}}
 
 	// AliyunConfigSrv 阿里云配置文件
 	AliyunConfigSrv *viper.Viper

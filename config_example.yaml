@@ -1,11 +1,11 @@
-aliyunConfig:
+aliyunAcm:
   endpoint: ""
   namespaceID: ""
   accessKey: ""
   secretKey: ""
   dataID: ""
   group: ""
-influxDBConfig:
+influxDB:
   host: ""
   port: ""
 env: ""
