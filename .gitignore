@@ -2,4 +2,4 @@ config.yaml
 log/*
 cache/*
 .vscode/*
-./bin/*
+.bin/*
