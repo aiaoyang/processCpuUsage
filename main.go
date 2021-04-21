@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aiaoyang/newloginserver/logger"
-	"github.com/aiaoyang/p08_monitor/common"
+	"github.com/aiaoyang/processCpuUsage/common"
+	"github.com/golang/glog"
 	influxc "github.com/influxdata/influxdb-client-go"
 )
 
@@ -43,7 +43,7 @@ func genericTODO(alarm func(msg interface{})) {
 	ok, err := c.Health(ctx)
 	if err != nil {
 		// 如果无法连接到 influxdb 则退出
-		logger.DebugLog.Fatal(err)
+		glog.Fatal(err)
 	}
 
 	// 检查 influxdb 连接是否可用

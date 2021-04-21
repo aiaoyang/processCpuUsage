@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aiaoyang/newloginserver/logger"
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
@@ -100,5 +100,5 @@ func stringToViperConfig(s string) {
 		panic(err)
 	}
 	NeedMonitorProcessInfo.PIDS = getProcessPID(NeedMonitorProcessInfo.Name)
-	logger.DebugLog.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
+	glog.Infof("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }
