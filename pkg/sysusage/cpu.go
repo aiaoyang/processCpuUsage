@@ -111,7 +111,7 @@ func (c *ProcessCPUStat) sub(sub *ProcessCPUStat) *ProcessCPUStat {
 }
 
 ///////////////////////////////////////////////
-//   					单次进程CPU使用量统计						//
+//   					单次进程CPU使用量统计   //
 ///////////////////////////////////////////////
 
 // ProcessCPUUsageOnce 统计一次进程cpu使用率
@@ -141,7 +141,7 @@ func ProcessCPUUsageOnce(pid int, duration time.Duration) Usage {
 }
 
 ///////////////////////////////////////////////
-//						单次系统CPU使用量统计 					//
+//						单次系统CPU使用量统计   //
 ///////////////////////////////////////////////
 
 // SysCPUUsageOnce 统计一次系统cpu使用率

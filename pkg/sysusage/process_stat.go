@@ -82,12 +82,15 @@ func GetAllProcess() map[int][]byte {
 
 			// cmdLine, err := ioutil.ReadFile("/proc/" + pFile.Name() + "/cmdline")
 
-			cmdLine, err := os.Open("/proc/" + pFile.Name() + "/cmdline")
+			f, err := os.Open("/proc/" + pFile.Name() + "/cmdline")
+
 			if err != nil {
 				return
 			}
+			defer f.Close()
+
 			buf := make([]byte, 256)
-			n, err := cmdLine.Read(buf)
+			n, err := f.Read(buf)
 			if err != nil {
 				return
 			}

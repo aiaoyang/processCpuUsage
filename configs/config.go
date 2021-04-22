@@ -63,6 +63,7 @@ func newConfigClient(c *Config) (acmClient nacos.IConfigClient) {
 	acmClient, err := clients.CreateConfigClient(map[string]interface{}{
 		"clientConfig": clientConfig,
 	})
+	// acmClient.PublishConfig()
 	if err != nil {
 		glog.Fatal(errors.Wrap(err, "connect to aliyun acm failed"))
 	}
