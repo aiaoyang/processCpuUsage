@@ -21,6 +21,12 @@ func (c *AcmInnerConfig) Reload(in *AcmInnerConfig) {
 	c.ProcessRegex = in.ProcessRegex
 	c.StoredPids = in.StoredPids
 }
+func (c *AcmInnerConfig) Lock() {
+	c.mu.Lock()
+}
+func (c *AcmInnerConfig) Unlock() {
+	c.mu.Unlock()
+}
 
 func (c *AcmInnerConfig) Watch(ctx context.Context, ch <-chan *AcmInnerConfig) {
 	for {

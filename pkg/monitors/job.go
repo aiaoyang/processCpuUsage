@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/aiaoyang/processCpuUsage/pkg/metric"
 	"github.com/aiaoyang/processCpuUsage/pkg/monitors/process"
 	"github.com/aiaoyang/processCpuUsage/pkg/monitors/system"
+	"github.com/golang/glog"
 	influxdb2 "github.com/influxdata/influxdb-client-go"
 	"github.com/pkg/errors"
 )
@@ -21,8 +21,8 @@ type CtxValueKey bool
 
 var (
 	configPath = new(string)
-	cfg        = configs.Config{}
-	acmConfig  = configs.AcmInnerConfig{}
+	// cfg        = configs.Config{}
+	acmConfig = configs.AcmInnerConfig{}
 )
 
 func init() {
@@ -36,7 +36,7 @@ func init() {
 
 }
 
-func connectInfluxDB() (sender metric.Sender, err error) {
+func connectInfluxDB(cfg configs.Config) (sender metric.Sender, err error) {
 	influxdbString := fmt.Sprintf("http://%s:%s",
 		cfg.InfluxDB.Host,
 		cfg.InfluxDB.Port,
@@ -52,7 +52,7 @@ func connectInfluxDB() (sender metric.Sender, err error) {
 		return
 	}
 
-	writeApi := c.WriteAPI("test", "test")
+	writeApi := c.WriteAPI(cfg.DBName, cfg.TableName)
 
 	go func() {
 		for {
@@ -65,30 +65,54 @@ func connectInfluxDB() (sender metric.Sender, err error) {
 	return
 }
 
-func StartMonitor(hostname, env string) {
-	acmChan := make(chan *configs.AcmInnerConfig)
-	acmConfig = configs.AcmInnerConfig{}
+func StartMonitor(ctx context.Context, hostname, env string) (err error) {
+	defer ctx.Done()
 
-	ctx := context.WithValue(context.Background(), CtxValueKey(true), &acmConfig)
-
-	cfg = configs.LoadConfig(*configPath)
-
-	err := configs.LoadAcmConfig(ctx, cfg, acmChan)
-	if err != nil {
-		log.Fatal(err)
+	value := ctx.Value(CtxValueKey(true))
+	cfg, ok := value.(configs.Config)
+	if !ok {
+		err = errors.Errorf("config value not found, got: %+v", value)
+		return
 	}
 
-	sender, err := connectInfluxDB()
+	acmChan := make(chan *configs.AcmInnerConfig)
+
+	acmConfig = configs.AcmInnerConfig{}
+
+	err = configs.LoadAcmConfig(ctx, cfg, acmChan)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	go (&acmConfig).Watch(ctx, acmChan)
-	go process.Monitor(ctx, sender)
-	go system.Monitor(ctx, sender)
-	go healthCheck(ctx, acmChan)
+	go pidCheck(ctx, &acmConfig)
+
+	sender, err := connectInfluxDB(cfg)
+	if err != nil {
+		return
+	}
+
+	errChan := make(chan error)
+
+	go process.Monitor(ctx, sender, errChan)
+	go system.Monitor(ctx, sender, errChan)
+
+	for e := range errChan {
+		glog.Errorf("got err: %+v\n", e)
+	}
+	return
 }
 
-func healthCheck(ctx context.Context, acmChan chan *configs.AcmInnerConfig) {
-
+func pidCheck(ctx context.Context, cfg *configs.AcmInnerConfig) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			cfg.Lock()
+			glog.Infof("stored pid: %v\n", cfg.StoredPids)
+			cfg.Unlock()
+			time.Sleep(time.Second)
+		}
+	}
 }

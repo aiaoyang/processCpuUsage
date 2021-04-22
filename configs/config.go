@@ -28,8 +28,10 @@ type AliyunAcm struct {
 
 // InfluxDBConfig 访问 ·influxdb· 认证配置
 type InfluxDB struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	DBName    string `yaml:"dbName"`
+	TableName string `yaml:"tableName"`
+	Host      string `yaml:"host"`
+	Port      string `yaml:"port"`
 }
 
 // Config 程序启动配置
