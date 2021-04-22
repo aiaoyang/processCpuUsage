@@ -1,7 +1,5 @@
-processInfo:
-  hostName: battle
-  pid:
-  - "2070"
-  name: 
-  - "processCpuUsage"
-  status: 1
+hostName: "battle"
+storedPids:
+- "2070"
+processRegex: "name-xxxx" 
+isMonitorOn: true
