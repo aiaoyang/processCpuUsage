@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/aiaoyang/processCpuUsage/configs"
@@ -29,10 +28,10 @@ func init() {
 	flag.StringVar(configPath, "c", "config.yaml", "指定默认配置文件")
 	flag.Parse()
 
-	if !flag.Parsed() {
-		flag.Usage()
-		os.Exit(1)
-	}
+	// if !flag.Parsed() {
+	// 	flag.Usage()
+	// 	os.Exit(1)
+	// }
 
 }
 

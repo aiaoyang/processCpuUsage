@@ -2,10 +2,12 @@ package sysusage
 
 import (
 	"bytes"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
+	"sync"
 )
 
 // IsPidRunning 进程是否运行
@@ -60,33 +62,53 @@ func GetProcessPID(names ...string) []int {
 // GetAllProcess 获取所有运行的进程 map[pid]processName
 func GetAllProcess() map[int][]byte {
 
-	res := make(map[int][]byte)
-
 	fileInfoList, err := ioutil.ReadDir("/proc/")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	mapChan := make(chan map[int][]byte, len(fileInfoList))
+	wg := &sync.WaitGroup{}
+	wg.Add(len(fileInfoList))
+
 	for _, pidFile := range fileInfoList {
+		go func(wg *sync.WaitGroup, ch chan map[int][]byte, pFile fs.FileInfo) {
+			defer wg.Done()
 
-		pidInt, err := strconv.Atoi(pidFile.Name())
-		if err != nil {
-			continue
-		}
+			pidInt, err := strconv.Atoi(pFile.Name())
+			if err != nil {
+				return
+			}
 
-		cmdLine, err := ioutil.ReadFile("/proc/" + pidFile.Name() + "/cmdline")
+			// cmdLine, err := ioutil.ReadFile("/proc/" + pFile.Name() + "/cmdline")
 
-		if err != nil {
-			log.Fatal(err)
-		}
+			cmdLine, err := os.Open("/proc/" + pFile.Name() + "/cmdline")
+			if err != nil {
+				return
+			}
+			buf := make([]byte, 256)
+			n, err := cmdLine.Read(buf)
+			if err != nil {
+				return
+			}
 
-		if bytes.Compare(cmdLine, []byte("")) == 0 {
-			continue
-		}
+			if bytes.Equal(buf[:n], []byte("")) {
+				return
+			}
 
-		res[pidInt] = cmdLine
+			mapChan <- map[int][]byte{pidInt: buf[:n]}
+		}(wg, mapChan, pidFile)
 
 	}
+	wg.Wait()
+	close(mapChan)
 
+	res := make(map[int][]byte)
+	for _map := range mapChan {
+		for k, v := range _map {
+			res[k] = v
+		}
+	}
 	return res
+
 }
