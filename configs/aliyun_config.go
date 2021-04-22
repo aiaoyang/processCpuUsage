@@ -1,19 +1,38 @@
 package configs
 
-// AliyunAcm 访问 ·阿里云配置中心· 认证配置
-type AliyunAcm struct {
-	Endpoint    string `yaml:"endpoint"`
-	NamespaceID string `yaml:"namespaceID"`
-	AccessKey   string `yaml:"accessKey"`
-	SecretKey   string `yaml:"secretKey"`
-
-	DataID string `yaml:"dataID"`
-	Group  string `yaml:"group"`
-}
+import (
+	"context"
+	"sync"
+)
 
 type AcmInnerConfig struct {
-	Hostname     string   `yaml:"hostName"`
-	StoredPids   []string `yaml:"storedPids"`
-	ProcessRegex string   `yaml:"processRegex"`
-	IsMonitorOn  bool     `yaml:"isMonitorOn"`
+	mu           sync.Mutex `yaml:"ommitte"`
+	Hostname     string     `yaml:"hostName"`
+	StoredPids   []string   `yaml:"storedPids"`
+	ProcessRegex string     `yaml:"processRegex"`
+	IsMonitorOn  bool       `yaml:"isMonitorOn"`
+}
+
+func (c *AcmInnerConfig) Reload(in *AcmInnerConfig) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Hostname = in.Hostname
+	c.IsMonitorOn = in.IsMonitorOn
+	c.ProcessRegex = in.ProcessRegex
+	c.StoredPids = in.StoredPids
+}
+
+func (c *AcmInnerConfig) Watch(ctx context.Context, ch <-chan *AcmInnerConfig) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case in := <-ch:
+			if in != nil {
+				c.Reload(in)
+			} else {
+				continue
+			}
+		}
+	}
 }

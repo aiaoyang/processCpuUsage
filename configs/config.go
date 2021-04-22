@@ -3,6 +3,8 @@ package configs
 import (
 	"bytes"
 	"context"
+	"log"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/nacos-group/nacos-sdk-go/clients"
@@ -13,53 +15,38 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// InfluxDBConfig 本地配置中influxdb相关配置
-type InfluxDBConfig struct {
+// AliyunAcm 访问 ·阿里云配置中心· 认证配置
+type AliyunAcm struct {
+	Endpoint    string `yaml:"endpoint"`
+	NamespaceID string `yaml:"namespaceID"`
+	AccessKey   string `yaml:"accessKey"`
+	SecretKey   string `yaml:"secretKey"`
+
+	DataID string `yaml:"dataID"`
+	Group  string `yaml:"group"`
+}
+
+// InfluxDBConfig 访问 ·influxdb· 认证配置
+type InfluxDB struct {
 	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }
 
-var (
-	// MyLocalConfig config 本地配置
-	GlobalConfig = Config{}
-)
-
 // Config 程序启动配置
 type Config struct {
-	AliyunAcm      `yaml:"aliyunAcm"`
-	InfluxDBConfig `yaml:"influxDB"`
-	Env            string `yaml:"env"`
+	AliyunAcm `yaml:"aliyunAcm"`
+	InfluxDB  `yaml:"influxDB"`
+
+	// 部署环境 ·dev· or ·release·
+	Env string `yaml:"env"`
 }
 
 func init() {
 
-	// 阿里云配置文件初始化
-	// AliyunConfigSrv = viper.New()
-	// AliyunConfigSrv.SetConfigType("yaml")
-
-	// // 本地配置文件初始化
-	// LocalViperConfig = viper.New()
-	// LocalViperConfig.SetConfigType("yaml")
-	// LocalViperConfig.SetConfigFile("./config.yaml")
-
-	// err := LocalViperConfig.ReadInConfig()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// err = LocalViperConfig.Unmarshal(&MyLocalConfig)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// ctx := context.TODO()
-	// MyLocalConfig.watchConfigChange(ctx)
-
-	// fmt.Printf("local Config : %v\n", MyLocalConfig)
 }
 
 // 连接阿里云配置中心
-func newConfigClient(c *Config) (acmClient nacos.IConfigClient, err error) {
+func newConfigClient(c *Config) (acmClient nacos.IConfigClient) {
 	clientConfig := constant.ClientConfig{
 		Endpoint:        c.Endpoint + ":8080",
 		NamespaceId:     c.NamespaceID,
@@ -71,7 +58,7 @@ func newConfigClient(c *Config) (acmClient nacos.IConfigClient, err error) {
 		LogLevel:        "warn",
 	}
 
-	acmClient, err = clients.CreateConfigClient(map[string]interface{}{
+	acmClient, err := clients.CreateConfigClient(map[string]interface{}{
 		"clientConfig": clientConfig,
 	})
 	if err != nil {
@@ -80,18 +67,22 @@ func newConfigClient(c *Config) (acmClient nacos.IConfigClient, err error) {
 
 	return
 }
+func LoadConfig(cfgPath string) (c Config) {
+	c = Config{}
+	f, err := os.Open(cfgPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = yaml.NewDecoder(f).Decode(&c)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
 
-func LoadConfig(ctx context.Context, c Config) (configCh chan *AcmInnerConfig, err error) {
+func LoadAcmConfig(ctx context.Context, c Config, acmCh chan *AcmInnerConfig) (err error) {
 
-	acmClient, _ := newConfigClient(&c)
-
-	go func() {
-		err = c.watchAcmChanged(ctx, acmClient, configCh)
-		if err != nil {
-			configCh <- nil
-			return
-		}
-	}()
+	acmClient := newConfigClient(&c)
 
 	go func() { // 获取第一次配置
 		conf, err := acmClient.GetConfig(vo.ConfigParam{
@@ -100,24 +91,31 @@ func LoadConfig(ctx context.Context, c Config) (configCh chan *AcmInnerConfig, e
 			OnChange: nil,
 		})
 		if err != nil {
-			configCh <- nil
+			acmCh <- nil
 			return
 		}
 
 		cfg, err := stringToViperConfig(conf)
 		if err != nil {
-			configCh <- nil
+			acmCh <- nil
 			return
 		}
 
-		configCh <- &cfg
+		acmCh <- &cfg
+	}()
+
+	go func() {
+		err = c.watchAcm(ctx, acmClient, acmCh)
+		if err != nil {
+			acmCh <- nil
+			return
+		}
 	}()
 
 	return
-
 }
 
-func (c *Config) watchAcmChanged(ctx context.Context, acmClient nacos.IConfigClient, configCh chan *AcmInnerConfig) (err error) {
+func (c *Config) watchAcm(ctx context.Context, acmClient nacos.IConfigClient, configCh chan *AcmInnerConfig) (err error) {
 
 	onChangedAction := func(namespace, group, dataID, data string) {
 		acmInnerCfg, err := stringToViperConfig(data)
@@ -145,17 +143,4 @@ func stringToViperConfig(s string) (acmCfg AcmInnerConfig, err error) {
 		return
 	}
 	return
-	// err := AliyunConfigSrv.ReadConfig(bytes.NewBuffer([]byte(s)))
-	// if err != nil {
-	// 	// log.Fatalf("err: %v", err)
-	// 	panic(err)
-	// }
-	// // 配置中心配置改变，同步到进程监控配置
-	// err = AliyunConfigSrv.Unmarshal(&NeedMonitorProcessInfo)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// NeedMonitorProcessInfo.PIDS = sysusage.GetProcessPID(NeedMonitorProcessInfo.Names...)
-	// log.Printf("config : %v\n", NeedMonitorProcessInfo)
-	// log.Printf("pid change to : %d\n", NeedMonitorProcessInfo.PIDS)
 }

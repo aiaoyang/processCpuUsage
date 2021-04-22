@@ -7,6 +7,5 @@ require (
 	github.com/influxdata/influxdb-client-go v1.4.0
 	github.com/nacos-group/nacos-sdk-go v1.0.7
 	github.com/pkg/errors v0.9.1
-	// github.com/spf13/viper v1.7.1
-	gopkg.in/yaml.v2 v2.2.5
+	gopkg.in/yaml.v2 v2.4.0
 )

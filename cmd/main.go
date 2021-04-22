@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/aiaoyang/processCpuUsage/configs"
 	"github.com/aiaoyang/processCpuUsage/pkg/metric"
 	// _ "net/http/pprof"
 )
